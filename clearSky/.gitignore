@@ -41,4 +41,4 @@ application-DB.properties
 application-API-Keys.properties
 
 # CSV 파일
-.csv
+*.csv
