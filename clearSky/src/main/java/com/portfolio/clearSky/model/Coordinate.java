@@ -11,8 +11,8 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class Coordinate {
-    private int deg; // 도
-    private int min; // 분
+    private Integer deg; // 시
+    private Integer min; // 분
     private BigDecimal sec; // 초
     private BigDecimal sec100; // 초/100
 }

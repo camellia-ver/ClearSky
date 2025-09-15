@@ -1,6 +1,5 @@
 package com.portfolio.clearSky.model;
 
-import com.portfolio.clearSky.model.enums.RegionCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,9 +17,8 @@ public class AdministrativeBoundary {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
-    private RegionCategory category;
+    private String category;
 
     @Column(nullable = false, length = 10)
     private String admCode; // 행정구역코드
@@ -32,8 +30,8 @@ public class AdministrativeBoundary {
     @Column(length = 50)
     private String admLevel3; // 3단계
 
-    private BigDecimal gridX;
-    private BigDecimal gridY;
+    private Integer gridX;
+    private Integer gridY;
 
     @Embedded
     @AttributeOverrides({
