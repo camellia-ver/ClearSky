@@ -1,0 +1,24 @@
+        .card-placeholder {
+          height: 150px;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          background-color: #f0f0f0;
+          color: #666;
+          font-weight: bold;
+        }
+        .graph-placeholder, .map-placeholder {
+          height: 300px;
+          background-color: #e9ecef;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          font-weight: bold;
+          color: #555;
+        }
+        .carousel-item {
+          height: 120px;
+        }
+        .carousel-item .card-placeholder {
+          height: 100px;
+        }
