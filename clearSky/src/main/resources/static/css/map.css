@@ -1,0 +1,17 @@
+        #map {
+          height: 500px;
+          width: 100%;
+        }
+        .legend {
+          background: white;
+          padding: 10px;
+          line-height: 1.5;
+          border-radius: 5px;
+          box-shadow: 0 0 5px rgba(0,0,0,0.3);
+        }
+        .legend span {
+          display: inline-block;
+          width: 20px;
+          height: 20px;
+          margin-right: 5px;
+        }
