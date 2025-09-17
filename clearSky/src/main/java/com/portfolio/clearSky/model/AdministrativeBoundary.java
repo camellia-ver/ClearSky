@@ -14,7 +14,8 @@ import java.time.LocalDate;
 @Builder
 public class AdministrativeBoundary {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "admin_boundary_seq")
+    @SequenceGenerator(name = "admin_boundary_seq", sequenceName = "admin_boundary_seq", allocationSize = 50)
     private Long id;
 
     @Column(nullable = false, length = 10)
