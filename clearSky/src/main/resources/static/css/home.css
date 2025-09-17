@@ -1,73 +1,56 @@
 /* 메인 배너 */
 .main-banner {
-  position: relative; /* 오버레이를 위해 필요 */
-  background-image: url("/image/clearSky.png");
-  background-size: cover;
-  background-position: center;
-  height: 100vh;
-  min-height: 400px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  color: white;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+    position: relative;
+    background-image: url("/image/clearSky.png");
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    min-height: 400px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    color: white;
+    text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+    overflow: hidden;
 }
 
 @media (max-height: 600px) {
-  .main-banner {
-    height: 80vh;
-  }
+    .main-banner {
+        height: 80vh;
+    }
 }
 
 /* 배경 오버레이 */
 .main-banner::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0, 0, 0, 0.3); /* 어두운 반투명 레이어 */
-  z-index: 0;
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.15));
+    z-index: 0;
+    backdrop-filter: blur(2px);
 }
 
 /* 검색 박스 */
 .search-box {
-  position: relative;
-  z-index: 1; /* 오버레이 위에 표시 */
-  max-width: 500px;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 10px; /* 버튼 간격 */
+    position: relative;
+    z-index: 2; /* 지도보다 위 */
+    max-width: 500px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    padding: 20px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 1rem;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+    backdrop-filter: blur(5px);
+    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
 }
 
-/* 모든 버튼 스타일 */
-.search-box .btn {
-  padding: 0.75rem 1.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-radius: 0.5rem;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-  transition: all 0.3s ease;
+/* 검색 박스 슬라이드 */
+.search-box.slide-up {
+    transform: translateY(-160px);
+    background-color: rgba(255, 255, 255, 0.25);
 }
 
-/* 기본 검색 버튼 */
-.search-box .btn-primary {
-  background-color: #007bff;
-  color: white;
-  border: none;
-}
-
-.search-box .btn-primary:hover {
-  background-color: #0056b3;
-}
-
-/* 지도 버튼 */
-.search-box .btn-outline-light {
-  background-color: rgba(255,255,255,0.85);
-  color: #000;
-  border: none;
-}
-
-.search-box .btn-outline-light:hover {
-  background-color: rgba(255,255,255,1);
-}

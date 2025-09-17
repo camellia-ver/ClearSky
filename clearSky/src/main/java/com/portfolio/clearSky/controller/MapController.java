@@ -9,4 +9,9 @@ public class MapController {
     public String map(){
         return "map";
     }
+
+    @GetMapping("/map-modal")
+    public String mapModal(){
+        return "map-modal";
+    }
 }
