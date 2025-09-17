@@ -39,7 +39,15 @@ public class AdministrativeBoundaryService {
 
     @Transactional
     public void importCsvToDb() {
-        ClassPathResource resource = new ClassPathResource(CSV_PATH);
+        ClassPathResource resource;
+
+        ClassPathResource failedResource = new ClassPathResource(FAILED_CSV_PATH);
+        if (failedResource.exists()) {
+            resource = failedResource;
+        } else {
+            resource = new ClassPathResource(CSV_PATH);
+        }
+
         int lineNumber = 0;
         int success = 0;
         int failed = 0;
@@ -123,7 +131,8 @@ public class AdministrativeBoundaryService {
                 log.error("Failed saving batch ending at line {}", lineNumber, e);
                 status.setRollbackOnly();// 배치만 롤백
             }
-            return null;
+
+            return Void.TYPE;
         });
     }
 
