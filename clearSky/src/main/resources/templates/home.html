@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,13 +23,29 @@
 <section class="main-banner">
     <div class="search-box">
         <div class="input-group mb-3">
-            <input type="text" class="form-control" placeholder="지역 입력" aria-label="지역 입력">
+            <input type="text" id="search-input" class="form-control" placeholder="지역 입력" aria-label="지역 입력">
             <button class="btn btn-primary" type="button">🔍 검색</button>
         </div>
-        <button id="show-map" class="btn btn-outline-light w-100">🗺️ 지도에서 선택</button>
+        <button class="btn btn-outline-light w-100" data-bs-toggle="modal" data-bs-target="#mapModal">
+            🗺️ 지도에서 선택
+        </button>
     </div>
 </section>
 
+<!-- 지도 모달 -->
+<div class="modal fade" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="mapModalLabel">지도 선택</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="닫기"></button>
+            </div>
+            <div class="modal-body">
+                <div id="modal-map" style="height:500px;"></div>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
