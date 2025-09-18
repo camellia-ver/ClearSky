@@ -3,6 +3,7 @@ package com.portfolio.clearSky.service;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.model.Coordinate;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
+import com.portfolio.clearSky.util.CsvUtils;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -28,12 +29,12 @@ import java.util.*;
 public class AdministrativeBoundaryLoader {
     private static final int BATCH_SIZE = 1000;
     private static final String CSV_PATH = "/data/administrative_boundary.csv";
-    private static final String FAILED_CSV_PATH = "/data/failed_rows.csv";
+    private static final String FAILED_CSV_PATH = "/data/failed_administrative_boundary.csv";
 
     private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.BASIC_ISO_DATE;
 
     private final TransactionTemplate transactionTemplate;
-    private final AdministrativeBoundaryRepository administrativeBoundaryRepository;
+    private final AdministrativeBoundaryRepository repository;
     private final EntityManager em;
 
     @Transactional
@@ -66,6 +67,7 @@ public class AdministrativeBoundaryLoader {
             );
 
             List<AdministrativeBoundary> buffer = new ArrayList<>(BATCH_SIZE);
+            CsvUtils csvUtils = new CsvUtils();
 
             for (CSVRecord record : parser){
                 lineNumber++;
@@ -98,17 +100,17 @@ public class AdministrativeBoundaryLoader {
                 }catch (Exception e){
                     log.warn("Failed to parse/build entity at record {}: {}", lineNumber, e.getMessage(), e);
                     failed++;
-                    writeFailedRecord(record, lineNumber);
+                    csvUtils.writeFailedRecord(record, lineNumber,FAILED_CSV_PATH);
                     continue;
                 }
 
                 if (buffer.size() >= BATCH_SIZE) {
-                    saveBatch(buffer, lineNumber);
+                    csvUtils.saveBatch(buffer, lineNumber, transactionTemplate, repository, em);
                 }
             }
 
             if (!buffer.isEmpty()) {
-                saveBatch(buffer, lineNumber);
+                csvUtils.saveBatch(buffer, lineNumber, transactionTemplate, repository, em);
             }
 
             log.info("Import finished. lines={} success={} failed={}", lineNumber, success, failed);
@@ -116,39 +118,6 @@ public class AdministrativeBoundaryLoader {
         } catch (Exception e){
             log.error("Failed to import CSV", e);
             throw new RuntimeException(e);
-        }
-    }
-
-    private void saveBatch(List<AdministrativeBoundary> buffer, int lineNumber){
-        transactionTemplate.execute(status -> {
-            try{
-                administrativeBoundaryRepository.saveAll(buffer);
-                em.flush();
-                em.clear();
-                buffer.clear();
-            } catch (Exception e){
-                log.error("Failed saving batch ending at line {}", lineNumber, e);
-                status.setRollbackOnly();// 배치만 롤백
-            }
-
-            return Void.TYPE;
-        });
-    }
-
-    private void writeFailedRecord(CSVRecord record, int lineNumber){
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(FAILED_CSV_PATH, true))){
-            if (lineNumber == 1){
-                // 첫 번째 실패라면 헤더 기록
-                writer.write(String.join(",", record.getParser().getHeaderNames()));
-                writer.newLine();
-            }
-
-            List<String> values = new ArrayList<>();
-            record.forEach(values::add);
-            writer.write(String.join(",", values));
-            writer.newLine();
-        } catch (IOException e){
-            log.error("Failed to write failed record at line {}", lineNumber, e);
         }
     }
 
