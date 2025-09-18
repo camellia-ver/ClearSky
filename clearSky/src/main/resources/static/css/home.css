@@ -28,23 +28,23 @@
     top: 0; left: 0; right: 0; bottom: 0;
     background: linear-gradient(rgba(0,0,0,0.35), rgba(0,0,0,0.15));
     z-index: 0;
-    backdrop-filter: blur(2px);
+    pointer-events: none; /* 클릭 이벤트 무시 */
 }
 
 /* 검색 박스 */
 .search-box {
     position: relative;
-    z-index: 2; /* 지도보다 위 */
+    z-index: 2;
+    pointer-events: auto; /* 클릭 가능 */
     max-width: 500px;
     width: 100%;
     display: flex;
     flex-direction: column;
     gap: 15px;
     padding: 20px;
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
     box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    backdrop-filter: blur(5px);
     transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
 }
 
@@ -53,4 +53,3 @@
     transform: translateY(-160px);
     background-color: rgba(255, 255, 255, 0.25);
 }
-

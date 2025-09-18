@@ -37,6 +37,24 @@ public class AdministrativeBoundaryService {
     private final AdministrativeBoundaryRepository administrativeBoundaryRepository;
     private final EntityManager em;
 
+    // 주소를 기반으로 ID 가져오기 (3단계까지)
+    public Long getBoundaryId(String level1, String level2, String level3){
+        Optional<AdministrativeBoundary> boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1AndAdmLevel2AndAdmLevel3(level1,level2,level3);
+        return boundaryOpt.map(AdministrativeBoundary::getId).orElse(null);
+    }
+
+    // 2단계까지만 입력
+    public Long getBoundaryId(String level1, String level2) {
+        Optional<AdministrativeBoundary> boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1AndAdmLevel2(level1, level2);
+        return boundaryOpt.map(AdministrativeBoundary::getId).orElse(null);
+    }
+
+    // 1단계만 입력
+    public Long getBoundaryId(String level1) {
+        Optional<AdministrativeBoundary> boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1(level1);
+        return boundaryOpt.map(AdministrativeBoundary::getId).orElse(null);
+    }
+
     @Transactional
     public void importCsvToDb() {
         ClassPathResource resource;

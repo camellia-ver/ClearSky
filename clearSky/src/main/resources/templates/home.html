@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -20,15 +20,38 @@
     <div th:replace="~{fragments/navbar :: nav}"></div>
 </header>
 
-<section class="main-banner">
-    <div class="search-box">
-        <div class="input-group mb-3">
-            <input type="text" id="search-input" class="form-control" placeholder="지역 입력" aria-label="지역 입력">
-            <button class="btn btn-primary" type="button">🔍 검색</button>
+<section class="main-banner py-5 d-flex justify-content-center align-items-center">
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+
+                <!-- 검색 박스 -->
+                <div class="search-box mx-auto">
+                    <form id="search-form" th:action="@{/dashboard}" method="get" class="row g-2 align-items-center">
+                        <div class="col-md-4">
+                            <input type="text" id="level1-input" name="level1" class="form-control" placeholder="시/도">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="level2-input" name="level2" class="form-control" placeholder="구/군">
+                        </div>
+                        <div class="col-md-4">
+                            <input type="text" id="level3-input" name="level3" class="form-control" placeholder="동">
+                        </div>
+                        <div class="col-12 d-grid mt-2">
+                            <button type="submit" class="btn btn-primary">🔍 검색</button>
+                        </div>
+                    </form>
+
+                    <!-- 지도 선택 버튼 -->
+                    <div class="col-12 d-grid mt-2">
+                        <button class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#mapModal">
+                            🗺️ 지도에서 선택
+                        </button>
+                    </div>
+                </div>
+
+            </div>
         </div>
-        <button class="btn btn-outline-light w-100" data-bs-toggle="modal" data-bs-target="#mapModal">
-            🗺️ 지도에서 선택
-        </button>
     </div>
 </section>
 
