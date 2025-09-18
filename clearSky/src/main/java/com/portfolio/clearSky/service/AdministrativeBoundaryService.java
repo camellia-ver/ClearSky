@@ -20,8 +20,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -36,6 +36,62 @@ public class AdministrativeBoundaryService {
     private final TransactionTemplate transactionTemplate;
     private final AdministrativeBoundaryRepository administrativeBoundaryRepository;
     private final EntityManager em;
+
+    // 좌표 기반 가장 가까운 행정구역 ID 찾기
+    public Long findNearestId(BigDecimal lon, BigDecimal lat, BigDecimal delta){
+        if (lon == null || lat == null || delta == null) return null;
+
+        BigDecimal lonMin = lon.subtract(delta);
+        BigDecimal lonMax = lon.add(delta);
+        BigDecimal latMin = lat.subtract(delta);
+        BigDecimal latMax = lat.add(delta);
+
+        List<AdministrativeBoundary> candidates = administrativeBoundaryRepository.findWithinRange(lonMin, lonMax, latMin, latMax);
+        if (candidates.isEmpty()) return null;
+
+        return candidates.stream()
+                .min(Comparator.comparingDouble(c -> haversine(lon, lat, c.getLatitude().getSec100(), c.getLatitude().getSec100())))
+                .map(AdministrativeBoundary::getId)
+                .orElse(null);
+    }
+
+    // 이름 기반 검색 → ID 리스트 반환
+    public List<Long> searchIdsByName(String name){
+        if (name == null || name.isBlank()) return Collections.emptyList();
+        return administrativeBoundaryRepository.findByName(name).stream()
+                .map(AdministrativeBoundary::getId)
+                .collect(Collectors.toList());
+    }
+
+    // 통합 검색: 항상 ID 반환
+    public Object find(String name, BigDecimal lon, BigDecimal lat){
+        // 좌표 우선
+        if (lon != null && lat != null){
+            BigDecimal delta = new BigDecimal("0.01");
+            Long nearestId = findNearestId(lon, lat, delta);
+            if (nearestId != null) return Map.of("id", nearestId);
+        }
+
+        // 이름 검색
+        if (name != null && !name.isBlank()){
+            List<Long> ids = searchIdsByName(name);
+            if (!ids.isEmpty()) return Map.of("ids", ids);
+        }
+
+        throw new RuntimeException("검색 결과가 없습니다.");
+    }
+
+    private double haversine(BigDecimal lon1, BigDecimal lat1, BigDecimal lon2, BigDecimal lat2){
+        final int R = 6371;
+        double latDistance = Math.toRadians(lat2.doubleValue() - lat1.doubleValue());
+        double lonDistance = Math.toRadians(lon2.doubleValue() - lon1.doubleValue());
+
+        double a = Math.sin(latDistance / 2) * Math.sin(latDistance / 2)
+                + Math.cos(Math.toRadians(lat1.doubleValue())) * Math.cos(Math.toRadians(lat2.doubleValue())) * Math.sin(lonDistance / 2) * Math.sin(lonDistance / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
 
     @Transactional
     public void importCsvToDb() {

@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class DashboardController {
     @GetMapping("/dashboard")
-    public String dashboard(@PathVariable String region){
+    public String dashboard(){
         return "dashboard";
     }
 }
