@@ -1,21 +1,33 @@
 package com.portfolio.clearSky.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.portfolio.clearSky.dto.ultraShortNowcast.RootDto;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
-import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URLEncoder;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Supplier;
+
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriBuilder;
+import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Mono;
 
 @Slf4j
 @Service
@@ -29,43 +41,68 @@ public class WeatherDataLoader {
     @Value("${open.data.api.key}")
     private String serviceKey;
 
-    private final static String DATA_TYPE = "JSON";
-
+    private final WebClient webClient;
     private final AdministrativeBoundaryService administrativeBoundaryService;
 
     //초단기실황조회 API 요청
+    @Scheduled(cron = "0 9 23 * * *")
     public void fetchUltraShortNowcast(){
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
+        URI url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, abList.getFirst());
 
-        for (AdministrativeBoundary ab: abList) {
-            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
-        }
+        Mono<RootDto> responseMono = webClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(RootDto.class);
+
+        responseMono.subscribe(rootDto -> {
+            System.out.println("Result Code: " + rootDto.getResponse().getHeader().getResultCode());
+
+            rootDto.getResponse().getBody().getItems().getItem()
+                    .forEach(item -> {
+                        System.out.println(item.getCategory() + " : " + item.getObsrValue());
+                    });
+        });
+//        for (AdministrativeBoundary ab: abList) {
+//            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
+//        }
     }
 
-    @Scheduled(cron = "0 43 16 * * *")
     // 초단기예보조회 API 요청 함수
+    @Scheduled(cron = "0 43 16 * * *")
     public void fetchUltraShortForecast(){
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getForecastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
-
-        for (AdministrativeBoundary ab: abList) {
-            String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
-            System.out.println(url);
-        }
+//
+//        for (AdministrativeBoundary ab: abList) {
+//            String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
+//        }
     }
 
-    private String buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
-        return baseUrl + "?serviceKey=" + getEncodingServiceKey()
-                + "&dataType=" + DATA_TYPE
-                + "&base_date=" + baseDate
-                + "&base_time=" + baseTime
-                + "&nx=" + ab.getGridX()
-                + "&ny=" + ab.getGridY();
+    private URI buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
+        return UriComponentsBuilder.fromUriString(baseUrl + "/getUltraSrtNcst")
+                .queryParam("serviceKey", serviceKey)
+                .queryParam("dataType", "JSON")
+                .queryParam("numOfRows", 10)
+                .queryParam("pageNo", 1)
+                .queryParam("base_date", baseDate)
+                .queryParam("base_time", baseTime)
+                .queryParam("nx", ab.getGridX())
+                .queryParam("ny", ab.getGridY())
+                .build(true)
+                .toUri();
+//        return baseUrl + "?serviceKey=" + getEncodingServiceKey()
+//                + "&dataType=JSON"
+//                + "&base_date=" + baseDate
+//                + "&base_time=" + baseTime
+//                + "&nx=" + ab.getGridX()
+//                + "&ny=" + ab.getGridY();
     }
 
     private String getEncodingServiceKey(){
