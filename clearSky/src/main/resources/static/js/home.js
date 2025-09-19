@@ -39,8 +39,12 @@ function initMap() {
 
     map = new kakao.maps.Map(container, {
         center: defaultCenter,
-        level: 3
+        level: 14
     });
+
+    // 줌 컨트롤 추가
+    var zoomControl = new kakao.maps.ZoomControl();
+    map.addControl(zoomControl, kakao.maps.ControlPosition.RIGHT);
 
     const geocoder = new kakao.maps.services.Geocoder();
     let marker = null;

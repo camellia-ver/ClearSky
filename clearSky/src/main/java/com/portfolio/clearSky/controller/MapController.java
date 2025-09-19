@@ -11,7 +11,8 @@ public class MapController {
     private String kakaoApiKey;
 
     @GetMapping("/map")
-    public String map(){
+    public String map(Model model){
+        model.addAttribute("kakaoKey", kakaoApiKey);
         return "map";
     }
 }

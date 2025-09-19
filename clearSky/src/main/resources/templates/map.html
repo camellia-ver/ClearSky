@@ -9,6 +9,11 @@
 
     <link rel="stylesheet" href="/css/map.css">
     <link rel="stylesheet" href="/css/common.css">
+
+    <!-- Kakao Maps SDK -->
+    <script th:src="@{'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + ${kakaoKey} + '&libraries=services&autoload=false'}"></script>
+
+    <script src="/js/map.js"></script>
 </head>
 <body>
 <header>
