@@ -31,4 +31,8 @@ public class UltraShortForecast {
     private LocalTime forecastTime;
 
     private Double forecastValue;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "administrative_boundary_id")
+    private AdministrativeBoundary administrativeBoundary;
 }

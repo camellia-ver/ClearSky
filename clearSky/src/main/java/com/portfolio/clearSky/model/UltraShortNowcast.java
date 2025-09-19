@@ -28,4 +28,8 @@ public class UltraShortNowcast {
     private WeatherCategory category;
 
     private Double observedValue;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "administrative_boundary_id")
+    private AdministrativeBoundary administrativeBoundary;
 }

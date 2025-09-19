@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.io.UnsupportedEncodingException;
@@ -38,13 +39,13 @@ public class WeatherDataLoader {
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
-        System.out.println(buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, abList.getFirst()));
 
-//        for (AdministrativeBoundary ab: abList) {
-//            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
-//        }
+        for (AdministrativeBoundary ab: abList) {
+            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
+        }
     }
 
+    @Scheduled(cron = "0 43 16 * * *")
     // 초단기예보조회 API 요청 함수
     public void fetchUltraShortForecast(){
         String baseDate = getBaseDate();
@@ -54,6 +55,7 @@ public class WeatherDataLoader {
 
         for (AdministrativeBoundary ab: abList) {
             String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
+            System.out.println(url);
         }
     }
 

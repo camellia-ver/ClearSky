@@ -18,7 +18,6 @@ public class HomeController {
     @GetMapping("/")
     public String home(Model model){
         model.addAttribute("kakaoKey", kakaoApiKey);
-        loader.fetchUltraShortNowcast();
         return "home";
     }
 }
