@@ -3,10 +3,15 @@ package com.portfolio.clearSky.service;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.hibernate.annotations.Cache;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdministrativeBoundaryService {
@@ -45,5 +50,11 @@ public class AdministrativeBoundaryService {
         }
 
         return boundaryOpt.orElse(null);
+    }
+
+    @Cacheable(value = "administrativeBoundary")
+    public List<AdministrativeBoundary> getAllLocations(){
+        log.info("DB에서 좌표 조회");
+        return administrativeBoundaryRepository.findAll();
     }
 }

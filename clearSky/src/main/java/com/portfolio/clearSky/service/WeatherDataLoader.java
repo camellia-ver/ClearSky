@@ -1,18 +1,25 @@
 package com.portfolio.clearSky.service;
 
+import com.portfolio.clearSky.model.AdministrativeBoundary;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Service;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.function.Supplier;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
-@PropertySource("classpath:application-API-URL.properties")
+@PropertySource("classpath:application-Open-Data-API.properties")
 public class WeatherDataLoader {
     @Value("${ultra.short.nowcast.url}")
     private String ultraShortNowcastApiUrl;
@@ -23,18 +30,44 @@ public class WeatherDataLoader {
 
     private final static String DATA_TYPE = "JSON";
 
+    private final AdministrativeBoundaryService administrativeBoundaryService;
+
     //초단기실황조회 API 요청
     public void fetchUltraShortNowcast(){
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
-        // TODO: API 호출 로직 추가 예정
+
+        List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
+        System.out.println(buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, abList.getFirst()));
+
+//        for (AdministrativeBoundary ab: abList) {
+//            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
+//        }
     }
 
     // 초단기예보조회 API 요청 함수
     public void fetchUltraShortForecast(){
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getForecastBaseTime);
-        // TODO: API 호출 로직 추가 예정
+
+        List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
+
+        for (AdministrativeBoundary ab: abList) {
+            String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
+        }
+    }
+
+    private String buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
+        return baseUrl + "?serviceKey=" + getEncodingServiceKey()
+                + "&dataType=" + DATA_TYPE
+                + "&base_date=" + baseDate
+                + "&base_time=" + baseTime
+                + "&nx=" + ab.getGridX()
+                + "&ny=" + ab.getGridY();
+    }
+
+    private String getEncodingServiceKey(){
+        return URLEncoder.encode(serviceKey, StandardCharsets.UTF_8);
     }
 
     // 날짜 yyyyMMdd

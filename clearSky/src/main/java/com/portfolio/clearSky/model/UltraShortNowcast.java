@@ -1,5 +1,6 @@
 package com.portfolio.clearSky.model;
 
+import com.portfolio.clearSky.model.emuns.WeatherCategory;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,7 +25,7 @@ public class UltraShortNowcast {
     private Integer ny;
 
     @Enumerated(EnumType.STRING)
-    private String category;
+    private WeatherCategory category;
 
     private Double observedValue;
 }
