@@ -14,10 +14,4 @@ public class MapController {
     public String map(){
         return "map";
     }
-
-    @GetMapping("/map-popup")
-    public String mapPopup(Model model){
-        model.addAttribute("kakaoKey", kakaoApiKey);
-        return "map-popup";
-    }
 }
