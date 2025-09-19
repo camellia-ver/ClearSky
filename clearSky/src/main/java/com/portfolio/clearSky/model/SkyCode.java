@@ -4,25 +4,19 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "forecast_codes")
+@Table(name = "sky_code")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder
-public class ForecastCodes {
+public class SkyCode {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 10)
-    private String forecastType;
-
-    @Column(nullable = false, length = 5, name = "code_value")
+    @Column(nullable = false, length = 5)
     private String codeValue;
 
-    @Column(nullable = false, length = 20)
-    private String codeName;
-
     @Column(nullable = false, length = 10)
-    private String unit;
+    private String codeName;
 }

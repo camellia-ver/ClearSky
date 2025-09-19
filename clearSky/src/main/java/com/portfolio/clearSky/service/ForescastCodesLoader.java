@@ -59,9 +59,9 @@ public class ForescastCodesLoader {
                 lineNumber++;
                 try{
                     ForecastCodes fc = ForecastCodes.builder()
-                            .forecast_type(record.get("예보구분"))
-                            .code_value(record.get("항목값"))
-                            .code_name(record.get("항목명"))
+                            .forecastType(record.get("예보구분"))
+                            .codeValue(record.get("항목값"))
+                            .codeName(record.get("항목명"))
                             .unit(record.get("단위"))
                             .build();
 
