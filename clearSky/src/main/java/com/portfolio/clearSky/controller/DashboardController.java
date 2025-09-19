@@ -1,5 +1,6 @@
 package com.portfolio.clearSky.controller;
 
+import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.service.AdministrativeBoundaryLoader;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +21,8 @@ public class DashboardController {
             @RequestParam(value="level3", required=false) String level3,
             Model model){
 
-        Long administrativeBoundaryId = administrativeBoundaryService.getBoundaryId(level1, level2, level3);
+        AdministrativeBoundary ab = administrativeBoundaryService.getBoundaryId(level1, level2, level3);
+
 
 
         return "dashboard";

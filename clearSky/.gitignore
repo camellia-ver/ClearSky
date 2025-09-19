@@ -39,6 +39,7 @@ out/
 # API 키 및 민감한 정보가 포함된 파일
 application-DB.properties
 application-API-Keys.properties
+application-Open-Data-API.properties
 
 # CSV 파일
 *.csv
