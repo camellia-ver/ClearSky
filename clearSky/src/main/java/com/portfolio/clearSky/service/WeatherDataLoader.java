@@ -1,9 +1,11 @@
 package com.portfolio.clearSky.service;
 
-import com.portfolio.clearSky.dto.ultraShortNowcast.ItemDto;
-import com.portfolio.clearSky.dto.ultraShortNowcast.RootDto;
+import com.portfolio.clearSky.dto.ItemDto;
+import com.portfolio.clearSky.dto.RootDto;
+import com.portfolio.clearSky.mapper.UltraShortForecastMapper;
 import com.portfolio.clearSky.mapper.UltraShortNowcastMapper;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
+import com.portfolio.clearSky.model.UltraShortForecast;
 import com.portfolio.clearSky.model.UltraShortNowcast;
 import com.portfolio.clearSky.repository.UltraShortForecastRepository;
 import com.portfolio.clearSky.repository.UltraShortNowcastRepository;
@@ -15,9 +17,9 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -30,6 +32,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import reactor.util.retry.Retry;
 
 @Slf4j
 @Service
@@ -51,7 +54,7 @@ public class WeatherDataLoader {
     private final UltraShortForecastRepository ultraShortForecastRepository;
 
     //초단기실황조회 API 요청
-    @Scheduled(cron = "0 23 19 * * *")
+    @Scheduled(cron = "0 6 20 * * *")
     public void fetchUltraShortNowcastAsync() {
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
@@ -135,17 +138,85 @@ public class WeatherDataLoader {
         }
     }
 
-    // 초단기예보조회 API 요청 함수
-    @Scheduled(cron = "0 43 16 * * *")
-    public void fetchUltraShortForecast(){
+
+    // 초단기예보
+    @Scheduled(cron = "0 27 20 * * *")
+    public void fetchUltraShortForecastAsync() {
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getForecastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
-//
-//        for (AdministrativeBoundary ab: abList) {
-//            String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
-//        }
+        int total = abList.size();
+        AtomicInteger processedCount = new AtomicInteger(0);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
+
+        Flux.fromIterable(abList)
+                .parallel()
+                .runOn(Schedulers.boundedElastic())
+                .flatMap(ab -> fetchForecastForBoundary(ab, baseDate, baseTime)
+                        .doOnNext(items -> {
+                            processedCount.incrementAndGet();
+
+                            if (items.isEmpty()) {
+                                log.warn("No forecast items for {}", ab.getId());
+                                failCount.incrementAndGet();
+                                return;
+                            }
+
+                            saveAllForecastFromDtosBatch(items, ab, baseDate, baseTime);
+                            successCount.incrementAndGet();
+
+                            items.forEach(item ->
+                                    log.info("Saved Forecast => {} : {} (ab: {})",
+                                            item.getCategory(), item.getFcstValue(), ab.getId()));
+
+                            log.info("Progress: {}/{} ({}%) processed, Success: {}, Fail: {}",
+                                    processedCount.get(),
+                                    total,
+                                    processedCount.get() * 100 / total,
+                                    successCount.get(),
+                                    failCount.get());
+                        })
+                        .onErrorResume(e -> {
+                            processedCount.incrementAndGet();
+                            failCount.incrementAndGet();
+                            log.warn("Failed to fetch forecast for {}: {}", ab.getId(), e.getMessage());
+                            return Mono.empty();
+                        }))
+                .sequential()
+                .blockLast();
+    }
+
+    private Mono<List<ItemDto>> fetchForecastForBoundary(AdministrativeBoundary ab, String baseDate, String baseTime) {
+        URI url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab);
+
+        return webClient.get()
+                .uri(url)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(RootDto.class)
+                .retryWhen(Retry.backoff(3, Duration.ofSeconds(2))
+                        .onRetryExhaustedThrow((spec, signal) ->
+                                new RuntimeException("Failed after retries for ab: " + ab.getId(), signal.failure())))
+                .map(rootDto -> {
+                    if (rootDto == null || rootDto.getResponse() == null) return List.of();
+                    List<ItemDto> items = rootDto.getResponse().getBody().getItems().getItem();
+                    return items != null ? items : List.of();
+                });
+    }
+
+    @Transactional
+    public void saveAllForecastFromDtosBatch(List<ItemDto> dtos, AdministrativeBoundary boundary, String baseDate, String baseTime) {
+        List<UltraShortForecast> entities = dtos.stream()
+                .map(dto -> UltraShortForecastMapper.toEntity(dto, boundary, baseDate, baseTime))
+                .toList();
+
+        for (int i = 0; i < entities.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, entities.size());
+            ultraShortForecastRepository.saveAll(entities.subList(i, end));
+            ultraShortForecastRepository.flush();
+        }
     }
 
     // DB 저장 메서드 수정

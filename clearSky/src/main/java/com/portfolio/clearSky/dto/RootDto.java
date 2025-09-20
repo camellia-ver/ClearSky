@@ -1,4 +1,4 @@
-package com.portfolio.clearSky.dto.ultraShortNowcast;
+package com.portfolio.clearSky.dto;
 
 import lombok.Getter;
 import lombok.Setter;

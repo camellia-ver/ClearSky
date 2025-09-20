@@ -1,4 +1,4 @@
-package com.portfolio.clearSky.dto.ultraShortNowcast;
+package com.portfolio.clearSky.dto;
 
 import lombok.Getter;
 import lombok.Setter;
@@ -11,5 +11,12 @@ public class ItemDto {
     private String category;
     private int nx;
     private int ny;
+
+    // Nowcast
     private String obsrValue;
+
+    // Forecast
+    private String fcstDate;
+    private String fcstTime;
+    private String fcstValue;
 }

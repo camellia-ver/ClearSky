@@ -1,7 +1,6 @@
 package com.portfolio.clearSky.mapper;
 
-import com.portfolio.clearSky.dto.UltraShortNowcastDto;
-import com.portfolio.clearSky.dto.ultraShortNowcast.ItemDto;
+import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.model.UltraShortNowcast;
 import com.portfolio.clearSky.model.emuns.WeatherCategory;
