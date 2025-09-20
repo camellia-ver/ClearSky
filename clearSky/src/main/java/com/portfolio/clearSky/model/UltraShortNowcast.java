@@ -25,6 +25,7 @@ public class UltraShortNowcast {
     private Integer ny;
 
     @Enumerated(EnumType.STRING)
+    @Column(length = 20)
     private WeatherCategory category;
 
     private Double observedValue;

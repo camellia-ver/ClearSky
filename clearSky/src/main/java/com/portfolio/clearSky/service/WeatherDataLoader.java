@@ -1,8 +1,13 @@
 package com.portfolio.clearSky.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.portfolio.clearSky.dto.ultraShortNowcast.ItemDto;
 import com.portfolio.clearSky.dto.ultraShortNowcast.RootDto;
+import com.portfolio.clearSky.mapper.UltraShortNowcastMapper;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
+import com.portfolio.clearSky.model.UltraShortNowcast;
+import com.portfolio.clearSky.repository.UltraShortForecastRepository;
+import com.portfolio.clearSky.repository.UltraShortNowcastRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -41,35 +46,60 @@ public class WeatherDataLoader {
     @Value("${open.data.api.key}")
     private String serviceKey;
 
+    private final static int BATCH_SIZE = 1000;
+
     private final WebClient webClient;
     private final AdministrativeBoundaryService administrativeBoundaryService;
+    private final UltraShortNowcastRepository ultraShortNowcastRepository;
+    private final UltraShortForecastRepository ultraShortForecastRepository;
 
     //초단기실황조회 API 요청
-    @Scheduled(cron = "0 9 23 * * *")
-    public void fetchUltraShortNowcast(){
+    @Scheduled(cron = "0 23 19 * * *")
+    public void fetchUltraShortNowcast() {
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
-        URI url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, abList.getFirst());
 
-        Mono<RootDto> responseMono = webClient.get()
-                .uri(url)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(RootDto.class);
+        for (AdministrativeBoundary ab : abList) {
+            URI url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
 
-        responseMono.subscribe(rootDto -> {
-            System.out.println("Result Code: " + rootDto.getResponse().getHeader().getResultCode());
+            try {
+                RootDto rootDto = webClient.get()
+                        .uri(url)
+                        .accept(MediaType.APPLICATION_JSON)
+                        .retrieve()
+                        .bodyToMono(RootDto.class)
+                        .block(); // 동기 처리
 
-            rootDto.getResponse().getBody().getItems().getItem()
-                    .forEach(item -> {
-                        System.out.println(item.getCategory() + " : " + item.getObsrValue());
-                    });
-        });
-//        for (AdministrativeBoundary ab: abList) {
-//            String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
-//        }
+                if (rootDto == null || rootDto.getResponse() == null) {
+                    log.warn("No response for AdministrativeBoundary: {}", ab.getId());
+                    continue;
+                }
+
+                String resultCode = rootDto.getResponse().getHeader().getResultCode();
+                log.info("Result Code: {} for {}", resultCode, ab.getId());
+
+                List<ItemDto> items = rootDto.getResponse().getBody().getItems().getItem();
+
+                if (items == null || items.isEmpty()) {
+                    log.warn("No items found for {}", ab.getId());
+                    continue;
+                }
+
+                // DB 저장
+                saveAllFromDtos(items, ab);
+
+                items.forEach(item ->
+                        log.info("Saved Nowcast => {} : {} (ab: {})",
+                                item.getCategory(), item.getObsrValue(), ab.getId()));
+
+            } catch (Exception e) {
+                // JSON 변환 실패나 XML 반환 등 모든 예외를 잡아서 로그만 남기고 다음으로 넘어가기
+                log.warn("Failed to parse JSON for AdministrativeBoundary: {}. Skipping. Error: {}",
+                        ab.getId(), e.getMessage());
+            }
+        }
     }
 
     // 초단기예보조회 API 요청 함수
@@ -85,8 +115,21 @@ public class WeatherDataLoader {
 //        }
     }
 
+    // DB 저장 메서드 수정
+    public void saveFromDto(ItemDto dto, AdministrativeBoundary boundary) {
+        UltraShortNowcast entity = UltraShortNowcastMapper.toEntity(dto, boundary);
+        ultraShortNowcastRepository.save(entity);
+    }
+
+    public void saveAllFromDtos(List<ItemDto> dtos, AdministrativeBoundary boundary) {
+        List<UltraShortNowcast> entities = dtos.stream()
+                .map(dto -> UltraShortNowcastMapper.toEntity(dto, boundary))
+                .toList();
+        ultraShortNowcastRepository.saveAll(entities);
+    }
+
     private URI buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
-        return UriComponentsBuilder.fromUriString(baseUrl + "/getUltraSrtNcst")
+        return UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("dataType", "JSON")
                 .queryParam("numOfRows", 10)
@@ -97,16 +140,6 @@ public class WeatherDataLoader {
                 .queryParam("ny", ab.getGridY())
                 .build(true)
                 .toUri();
-//        return baseUrl + "?serviceKey=" + getEncodingServiceKey()
-//                + "&dataType=JSON"
-//                + "&base_date=" + baseDate
-//                + "&base_time=" + baseTime
-//                + "&nx=" + ab.getGridX()
-//                + "&ny=" + ab.getGridY();
-    }
-
-    private String getEncodingServiceKey(){
-        return URLEncoder.encode(serviceKey, StandardCharsets.UTF_8);
     }
 
     // 날짜 yyyyMMdd
