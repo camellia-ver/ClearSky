@@ -1,6 +1,6 @@
 package com.portfolio.clearSky.controller;
 
-import com.portfolio.clearSky.service.WeatherDataLoader;
+import com.portfolio.clearSky.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Controller;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Controller
 @RequiredArgsConstructor
 public class HomeController {
-    private final WeatherDataLoader loader;
+    private final WeatherService loader;
 
     @Value("${kakao.map.api.key}")
     private String kakaoApiKey;
