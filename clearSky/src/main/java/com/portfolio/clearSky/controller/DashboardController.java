@@ -31,8 +31,13 @@ public class DashboardController {
             @RequestParam(value="level2", required=false) String level2,
             @RequestParam(value="level3", required=false) String level3,
             Model model){
-        String fullRegion = addressService.convertRegionName(level1);
+        if (level1 == null || level1.isBlank()) {
+            log.warn("level1 누락");
+            model.addAttribute("weatherData", List.of());
+            return "dashboard";
+        }
 
+        String fullRegion = addressService.convertRegionName(level1);
         Optional<AdministrativeBoundary> abOpt = administrativeBoundaryService.getBoundary(fullRegion, level2, level3);
 
         if (abOpt.isEmpty()) {
@@ -43,11 +48,14 @@ public class DashboardController {
 
         AdministrativeBoundary ab = abOpt.get();
 
-        weatherService.getNowcastForLocation(ab)
-                .subscribe(
-                        list -> list.forEach(System.out::println),   // 성공 시
-                        error -> log.error("Weather API error: {}", error.getMessage()) // 실패 시
-                );
+        // 비동기 대신 blocking으로 처리
+        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
+                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
+                .onErrorReturn(List.of())
+                .block();  // 주의: 요청 지연이 발생할 수 있음
+
+        model.addAttribute("weatherData", weatherData);
+
 
         return "dashboard";
     }

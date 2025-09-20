@@ -23,20 +23,16 @@ public class AdministrativeBoundaryService {
      */
     public Optional<AdministrativeBoundary> getBoundary(String level1, String level2, String level3){
         if (level1 == null || level1.isBlank()) {
-            // level1 없으면 조회 불가
             return Optional.empty();
         }
 
         Optional<AdministrativeBoundary> boundaryOpt;
 
         if (level2 != null && !level2.isBlank() && level3 != null && !level3.isBlank()) {
-            // level1 정확히 + level2 일부 + level3 일부
             boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3Containing(level1, level2, level3);
         } else if (level2 != null && !level2.isBlank()) {
-            // level1 정확히 + level2 일부 (level3 null)
             boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3IsNull(level1, level2);
         } else {
-            // level1 정확히만
             boundaryOpt = repository.findByAdmLevel1AndAdmLevel2IsNullAndAdmLevel3IsNull(level1);
         }
 

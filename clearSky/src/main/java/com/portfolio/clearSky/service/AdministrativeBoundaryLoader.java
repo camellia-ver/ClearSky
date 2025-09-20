@@ -75,9 +75,9 @@ public class AdministrativeBoundaryLoader {
                     AdministrativeBoundary ab = AdministrativeBoundary.builder()
                             .category(record.get("구분"))
                             .admCode(record.get("행정구역코드"))
-                            .admLevel1(record.get("1단계"))
-                            .admLevel2(record.get("2단계"))
-                            .admLevel3(record.get("3단계"))
+                            .admLevel1(emptyToNull(record.get("1단계")))
+                            .admLevel2(emptyToNull(record.get("2단계")))
+                            .admLevel3(emptyToNull(record.get("3단계")))
                             .gridX(parseIntegerOrNull(record.get("격자 X")))
                             .gridY(parseIntegerOrNull(record.get("격자 Y")))
                             .longitude(Coordinate.builder()
@@ -119,6 +119,13 @@ public class AdministrativeBoundaryLoader {
             log.error("Failed to import CSV", e);
             throw new RuntimeException(e);
         }
+    }
+
+    private String emptyToNull(String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value;
     }
 
     private static String trimToNull(String s){
