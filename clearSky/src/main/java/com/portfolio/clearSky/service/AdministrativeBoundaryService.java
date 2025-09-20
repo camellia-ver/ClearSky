@@ -4,57 +4,42 @@ import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.hibernate.annotations.Cache;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AdministrativeBoundaryService {
-    private final AdministrativeBoundaryRepository administrativeBoundaryRepository;
+    private final AdministrativeBoundaryRepository repository;
 
     /**
-     * 입력된 level에 따라 적절한 repository 메서드를 호출하여 boundary ID 반환
+     * level1~level3를 기반으로 AdministrativeBoundary 조회
+     * @param level1 1단계 행정구역 (필수)
+     * @param level2 2단계 행정구역 (선택)
+     * @param level3 3단계 행정구역 (선택)
+     * @return 조회 결과 Optional
      */
-    public AdministrativeBoundary getBoundaryId(String level1, String level2, String level3){
-        Optional<AdministrativeBoundary> boundaryOpt;
-
-        if (level1 != null && level2 != null && level3 != null) {
-            // level1 + level2 + level3
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1AndAdmLevel2AndAdmLevel3(level1, level2, level3);
-        } else if (level1 != null && level2 != null) {
-            // level1 + level2
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1AndAdmLevel2(level1, level2);
-        } else if (level1 != null && level3 != null) {
-            // level1 + level3
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1AndAdmLevel3(level1, level3);
-        } else if (level2 != null && level3 != null) {
-            // level2 + level3
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel2AndAdmLevel3(level2, level3);
-        } else if (level1 != null) {
-            // level1 단독
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel1(level1);
-        } else if (level2 != null) {
-            // level2 단독
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel2(level2);
-        } else if (level3 != null) {
-            // level3 단독
-            boundaryOpt = administrativeBoundaryRepository.findByAdmLevel3(level3);
-        } else {
-            // 모두 null이면 조회 불가
-            return null;
+    public Optional<AdministrativeBoundary> getBoundary(String level1, String level2, String level3){
+        if (level1 == null || level1.isBlank()) {
+            // level1 없으면 조회 불가
+            return Optional.empty();
         }
 
-        return boundaryOpt.orElse(null);
-    }
+        Optional<AdministrativeBoundary> boundaryOpt;
 
-    @Cacheable(value = "administrativeBoundary")
-    public List<AdministrativeBoundary> getAllLocations(){
-        log.info("DB에서 좌표 조회");
-        return administrativeBoundaryRepository.findAll();
+        if (level2 != null && !level2.isBlank() && level3 != null && !level3.isBlank()) {
+            // level1 정확히 + level2 일부 + level3 일부
+            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3Containing(level1, level2, level3);
+        } else if (level2 != null && !level2.isBlank()) {
+            // level1 정확히 + level2 일부 (level3 null)
+            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3IsNull(level1, level2);
+        } else {
+            // level1 정확히만
+            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2IsNullAndAdmLevel3IsNull(level1);
+        }
+
+        return boundaryOpt;
     }
 }

@@ -40,7 +40,6 @@ public class WeatherService {
     private String serviceKey;
 
     private final WebClient webClient;
-    private final AdministrativeBoundaryService administrativeBoundaryService;
 
     /**
      * 특정 지역 초단기 실황 가져오기

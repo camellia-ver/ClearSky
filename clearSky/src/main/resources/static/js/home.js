@@ -2,6 +2,39 @@ let map; // 지도 전역 변수
 let mapInitialized = false;
 
 document.addEventListener("DOMContentLoaded", () => {
+        const level1 = document.getElementById('level1-input');
+        const level2 = document.getElementById('level2-input');
+        const level3 = document.getElementById('level3-input');
+
+        // level1 입력 체크
+        level1.addEventListener('input', () => {
+            level2.readOnly  = level1.value.trim() === '';
+            if (level2.readOnly) {
+                level2.value = '';
+                level3.readOnly = true;
+                level3.value = '';
+            }
+        });
+
+        // level2 입력 체크
+        level2.addEventListener('input', () => {
+            if (level1.value.trim() === '') {
+                alert("먼저 시/도를 입력해주세요.");  // 경고 메시지
+                level2.value = '';
+                return;
+            }
+            level3.readOnly = level2.value.trim() === '';
+            if (level3.readOnly) level3.value = '';
+        });
+
+        // level3 입력 체크
+        level3.addEventListener('input', () => {
+            if (level1.value.trim() === '' || level2.value.trim() === '') {
+                alert("먼저 시/도와 구/군을 입력해주세요."); // 경고 메시지
+                level3.value = '';
+            }
+        });
+
     const openMapBtn = document.getElementById('openMapBtn');
     if (!openMapBtn) return;
 
