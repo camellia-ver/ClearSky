@@ -1,6 +1,5 @@
 package com.portfolio.clearSky.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.portfolio.clearSky.dto.ultraShortNowcast.ItemDto;
 import com.portfolio.clearSky.dto.ultraShortNowcast.RootDto;
 import com.portfolio.clearSky.mapper.UltraShortNowcastMapper;
@@ -15,24 +14,22 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URI;
-import java.net.URLEncoder;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriComponentsBuilder;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 @Slf4j
 @Service
@@ -55,50 +52,86 @@ public class WeatherDataLoader {
 
     //초단기실황조회 API 요청
     @Scheduled(cron = "0 23 19 * * *")
-    public void fetchUltraShortNowcast() {
+    public void fetchUltraShortNowcastAsync() {
         String baseDate = getBaseDate();
         String baseTime = buildBaseTime(this::getNowcastBaseTime);
 
         List<AdministrativeBoundary> abList = administrativeBoundaryService.getAllLocations();
+        int total = abList.size();
+        AtomicInteger processedCount = new AtomicInteger(0);
+        AtomicInteger successCount = new AtomicInteger(0);
+        AtomicInteger failCount = new AtomicInteger(0);
 
-        for (AdministrativeBoundary ab : abList) {
-            URI url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
+        Flux.fromIterable(abList)
+                .parallel() // 병렬 처리
+                .runOn(Schedulers.boundedElastic()) // I/O 작업에 적합
+                .flatMap(ab -> {
+                    URI url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab);
 
-            try {
-                RootDto rootDto = webClient.get()
-                        .uri(url)
-                        .accept(MediaType.APPLICATION_JSON)
-                        .retrieve()
-                        .bodyToMono(RootDto.class)
-                        .block(); // 동기 처리
+                    return webClient.get()
+                            .uri(url)
+                            .accept(MediaType.APPLICATION_JSON)
+                            .retrieve()
+                            .bodyToMono(RootDto.class)
+                            .doOnNext(rootDto -> {
+                                processedCount.incrementAndGet();
 
-                if (rootDto == null || rootDto.getResponse() == null) {
-                    log.warn("No response for AdministrativeBoundary: {}", ab.getId());
-                    continue;
-                }
+                                if (rootDto == null) {
+                                    log.warn("Empty response for AdministrativeBoundary: {}. Skipping.", ab.getId());
+                                    failCount.incrementAndGet();
+                                    return;
+                                }
 
-                String resultCode = rootDto.getResponse().getHeader().getResultCode();
-                log.info("Result Code: {} for {}", resultCode, ab.getId());
+                                if (rootDto.getResponse() == null) {
+                                    log.warn("Non-JSON or invalid response received for AdministrativeBoundary: {}. Skipping.", ab.getId());
+                                    failCount.incrementAndGet();
+                                    return;
+                                }
 
-                List<ItemDto> items = rootDto.getResponse().getBody().getItems().getItem();
+                                List<ItemDto> items = rootDto.getResponse().getBody().getItems().getItem();
+                                if (items == null || items.isEmpty()) {
+                                    log.warn("No items found for {}", ab.getId());
+                                    failCount.incrementAndGet();
+                                    return;
+                                }
 
-                if (items == null || items.isEmpty()) {
-                    log.warn("No items found for {}", ab.getId());
-                    continue;
-                }
+                                // 배치 저장
+                                saveAllFromDtosBatch(items, ab);
+                                successCount.incrementAndGet();
 
-                // DB 저장
-                saveAllFromDtos(items, ab);
+                                items.forEach(item ->
+                                        log.info("Saved Nowcast => {} : {} (ab: {})",
+                                                item.getCategory(), item.getObsrValue(), ab.getId()));
 
-                items.forEach(item ->
-                        log.info("Saved Nowcast => {} : {} (ab: {})",
-                                item.getCategory(), item.getObsrValue(), ab.getId()));
+                                log.info("Progress: {}/{} ({}%) processed, Success: {}, Fail: {}",
+                                        processedCount.get(),
+                                        total,
+                                        processedCount.get() * 100 / total,
+                                        successCount.get(),
+                                        failCount.get());
+                            })
+                            .onErrorResume(e -> {
+                                processedCount.incrementAndGet();
+                                failCount.incrementAndGet();
+                                log.warn("Failed to fetch for {}: {}", ab.getId(), e.getMessage());
+                                return Mono.empty();
+                            });
+                })
+                .sequential()
+                .blockLast(); // 모든 요청 완료 대기
+    }
 
-            } catch (Exception e) {
-                // JSON 변환 실패나 XML 반환 등 모든 예외를 잡아서 로그만 남기고 다음으로 넘어가기
-                log.warn("Failed to parse JSON for AdministrativeBoundary: {}. Skipping. Error: {}",
-                        ab.getId(), e.getMessage());
-            }
+    // 배치 단위로 DB 저장
+    @Transactional
+    public void saveAllFromDtosBatch(List<ItemDto> dtos, AdministrativeBoundary boundary) {
+        List<UltraShortNowcast> entities = dtos.stream()
+                .map(dto -> UltraShortNowcastMapper.toEntity(dto, boundary))
+                .toList();
+
+        for (int i = 0; i < entities.size(); i += BATCH_SIZE) {
+            int end = Math.min(i + BATCH_SIZE, entities.size());
+            ultraShortNowcastRepository.saveAll(entities.subList(i, end));
+            ultraShortNowcastRepository.flush(); // 배치별 commit
         }
     }
 
