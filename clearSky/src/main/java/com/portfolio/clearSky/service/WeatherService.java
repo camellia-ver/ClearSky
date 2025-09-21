@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
@@ -39,58 +38,25 @@ public class WeatherService {
     private final WebClient webClient;
 
     /**
-     * WebFlux 환경에서 비동기 테스트용 함수
+     * 특정 지역 초단기 실황 가져오기
      */
-    public void testNowcastApiAsync(AdministrativeBoundary ab) {
+    public Mono<List<ItemDto>> getNowcastForLocation(AdministrativeBoundary ab){
         String baseDate = getBaseDate();
         String baseTime = getNowcastBaseTime();
         String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab).toString();
-        log.info("🔍 Testing Weather API (async) with URL: {}", url);
 
-        test(url, ab.getId())
-                .subscribe(
-                        res -> log.info("✅ API success, raw response for abId={}: {}", ab.getId(), res),
-                        err -> log.error("❌ API call failed for abId={}", ab.getId(), err),
-                        () -> log.info("✔️ Completed API call for abId={}", ab.getId())
-                );
-//        fetchDataFromApi(url, ab.getId())
-//                .subscribe(
-//                        res -> log.info("✅ API success, raw response for abId={}: {}", ab.getId(), res),
-//                        err -> log.error("❌ API call failed for abId={}", ab.getId(), err),
-//                        () -> log.info("✔️ Completed API call for abId={}", ab.getId())
-//                );
+        return fetchDataFromApi(url, ab.getId());
     }
-
-    /**
-     * 특정 지역 초단기 실황 가져오기
-     */
-//    public Mono<List<ItemDto>> getNowcastForLocation(AdministrativeBoundary ab){
-//        String baseDate = getBaseDate();
-//        String baseTime = getNowcastBaseTime();
-//        String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab).toString();
-//        log.info(url);
-//
-//        return fetchDataFromApi(url, ab.getId());
-//    }
 
     /**
      * 특정 지역 초단기 예보 가져오기
      */
-//    public Mono<List<ItemDto>> getForecastForLocation(AdministrativeBoundary ab) {
-//        String baseDate = getBaseDate();
-//        String baseTime = getForecastBaseTime();
-//        String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab).toString();
-//
-//        return fetchDataFromApi(url, ab.getId());
-//    }
+    public Mono<List<ItemDto>> getForecastForLocation(AdministrativeBoundary ab) {
+        String baseDate = getBaseDate();
+        String baseTime = getForecastBaseTime();
+        String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab).toString();
 
-    private Mono<String> test(String url, Long abId){
-         return webClient.get()
-                .uri(url)
-                .accept(MediaType.APPLICATION_XML)
-                .retrieve()
-                .bodyToMono(String.class)
-                .doOnNext(xml -> log.info("Raw API XML for abId={}: {}", abId, xml));
+        return fetchDataFromApi(url, ab.getId());
     }
 
     /**

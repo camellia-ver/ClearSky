@@ -1,5 +1,6 @@
 package com.portfolio.clearSky.controller;
 
+import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.service.AddressService;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
@@ -44,14 +45,22 @@ public class DashboardController {
         }
 
         AdministrativeBoundary ab = abOpt.get();
-        weatherService.testNowcastApiAsync(ab);
-//        // 비동기 대신 blocking으로 처리
-//        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
-//                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
-//                .onErrorReturn(List.of())
-//                .block();  // 주의: 요청 지연이 발생할 수 있음
+        // 비동기 대신 blocking으로 처리
+        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
+                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
+                .onErrorReturn(List.of())
+                .block();  // 주의: 요청 지연이 발생할 수 있음
 
-//        model.addAttribute("weatherData", weatherData);
+        // 콘솔에 출력
+                System.out.println("weatherData: " + weatherData);
+
+        // 또는 자세히 보기 위해 각 아이템을 반복
+                if (weatherData != null) {
+                    weatherData.forEach(System.out::println);
+                }
+
+        // 모델에 추가
+                model.addAttribute("weatherData", weatherData);
 
 
         return "dashboard";
