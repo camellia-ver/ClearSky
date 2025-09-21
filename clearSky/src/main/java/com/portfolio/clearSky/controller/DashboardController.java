@@ -1,9 +1,7 @@
 package com.portfolio.clearSky.controller;
 
-import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.service.AddressService;
-import com.portfolio.clearSky.service.AdministrativeBoundaryLoader;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
 import com.portfolio.clearSky.service.WeatherService;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +10,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import reactor.core.publisher.Mono;
 
 import java.util.List;
 import java.util.Optional;
@@ -47,14 +44,14 @@ public class DashboardController {
         }
 
         AdministrativeBoundary ab = abOpt.get();
+        weatherService.testNowcastApiAsync(ab);
+//        // 비동기 대신 blocking으로 처리
+//        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
+//                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
+//                .onErrorReturn(List.of())
+//                .block();  // 주의: 요청 지연이 발생할 수 있음
 
-        // 비동기 대신 blocking으로 처리
-        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
-                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
-                .onErrorReturn(List.of())
-                .block();  // 주의: 요청 지연이 발생할 수 있음
-
-        model.addAttribute("weatherData", weatherData);
+//        model.addAttribute("weatherData", weatherData);
 
 
         return "dashboard";
