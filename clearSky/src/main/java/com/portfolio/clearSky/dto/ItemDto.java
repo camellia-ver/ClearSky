@@ -12,4 +12,8 @@ public class ItemDto {
     private int nx;
     private int ny;
     private String obsrValue;
+
+    private String fcstDate;
+    private String fcstTime;
+    private String fcstValue;
 }
