@@ -1,8 +1,5 @@
 package com.portfolio.clearSky.controller;
 
-import com.portfolio.clearSky.dto.ItemDto;
-import com.portfolio.clearSky.model.AdministrativeBoundary;
-import com.portfolio.clearSky.service.AddressService;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
 import com.portfolio.clearSky.service.WeatherService;
 import lombok.RequiredArgsConstructor;
@@ -12,23 +9,26 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import java.util.List;
-import java.util.Optional;
-
 @Slf4j
 @Controller
 @RequiredArgsConstructor
 public class DashboardController {
     private final AdministrativeBoundaryService administrativeBoundaryService;
     private final WeatherService weatherService;
-    private final AddressService addressService;
 
     @GetMapping("/dashboard")
     public String dashboard(
-            @RequestParam(value="level1", required=false) String level1,
-            @RequestParam(value="level2", required=false) String level2,
-            @RequestParam(value="level3", required=false) String level3,
+            @RequestParam(value = "lat") double lat,
+            @RequestParam(value = "lng") double lng,
             Model model){
+
+        System.out.println("받은 위도: " + lat);
+        System.out.println("받은 경도: " + lng);
+
+        System.out.println("보정 위도: " + administrativeBoundaryService.getOptimalLocation(lat, lng).getGridX());
+        System.out.println("보정 경도: " + administrativeBoundaryService.getOptimalLocation(lat, lng).getGridY());
+
+
 //        if (level1 == null || level1.isBlank()) {
 //            log.warn("level1 누락");
 //            model.addAttribute("weatherData", List.of());

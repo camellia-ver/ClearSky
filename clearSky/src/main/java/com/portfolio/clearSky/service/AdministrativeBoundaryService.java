@@ -1,6 +1,7 @@
 package com.portfolio.clearSky.service;
 
 import com.portfolio.clearSky.dto.LocationDTO;
+import com.portfolio.clearSky.dto.NearestLocationDto;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -56,5 +58,10 @@ public class AdministrativeBoundaryService {
         }
 
         return dto;
+    }
+
+    public NearestLocationDto getOptimalLocation(double lat, double lng) {
+        return repository.findNearestLocationDto(lat, lng)
+                .orElseThrow(() -> new NoSuchElementException("가장 가까운 위치를 DB에서 찾을 수 없습니다. (DB가 비어있을 가능성)"));
     }
 }
