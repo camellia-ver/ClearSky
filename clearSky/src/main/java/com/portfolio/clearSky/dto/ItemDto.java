@@ -1,8 +1,6 @@
 package com.portfolio.clearSky.dto;
 
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 
 @Data
 public class ItemDto {
@@ -16,4 +14,6 @@ public class ItemDto {
     private String fcstDate;
     private String fcstTime;
     private String fcstValue;
+
+    private String categoryName;
 }

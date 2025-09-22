@@ -15,6 +15,6 @@ public class NearestLocationDto {
     public String getFullAddress() {
         String level2 = admLevel2 != null ? admLevel2 : "";
         String level3 = admLevel3 != null ? admLevel3 : "";
-        return String.format("%s %s %s", admLevel1, admLevel2, level3).trim();
+        return String.format("%s %s %s", admLevel1, level2, level3).trim();
     }
 }

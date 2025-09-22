@@ -1,8 +1,7 @@
 package com.portfolio.clearSky.service;
 
-import com.portfolio.clearSky.dto.ItemDto;
-import com.portfolio.clearSky.dto.LocationDTO;
-import com.portfolio.clearSky.dto.NearestLocationDto;
+import com.portfolio.clearSky.dto.*;
+import com.portfolio.clearSky.mapper.WeatherCategoryMapper;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +11,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -21,6 +23,12 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class AdministrativeBoundaryService {
+    private static final DateTimeFormatter DATE_INPUT_FORMATTER = DateTimeFormatter.ofPattern("yyyyMMdd");
+    private static final DateTimeFormatter TIME_INPUT_FORMATTER = DateTimeFormatter.ofPattern("HHmm");
+    private static final DateTimeFormatter DATE_OUTPUT_FORMATTER = DateTimeFormatter.ofPattern("yyyy년 M월 d일");
+    private static final DateTimeFormatter TIME_OUTPUT_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+
+
     private final AdministrativeBoundaryRepository repository;
     private final WeatherService weatherService;
 
@@ -73,39 +81,145 @@ public class AdministrativeBoundaryService {
                 .orElseThrow(() -> new NoSuchElementException("가장 가까운 위치를 DB에서 찾을 수 없습니다. (DB가 비어있을 가능성)"));
     }
 
-    /**
-     * 사용자 위치에 대한 초단기 실황 및 예보 데이터를 모두 가져오는 통합 함수
-     */
-    public Mono<List<ItemDto>> getWeatherDataForUserLocation(double lat, double lng){
-        // 1. 사용자 좌표를 DB의 가장 가까운 유효한 gridX, gridY로 변환
+    public Mono<CombinedWeatherDto> getNowcastForUserLocation(double lat, double lng){
         NearestLocationDto nearestLocation;
 
         try {
             nearestLocation = getNearestGridCoordinates(lat, lng);
         } catch (NoSuchElementException e) {
-            // 위치 정보를 찾지 못하면 빈 Mono를 반환하여 호출자(Controller)가 오류를 처리
+            // 위치 정보를 찾지 못하면 오류 Mono를 반환
             return Mono.error(e);
         }
 
         Integer gridX = nearestLocation.getGridX();
         Integer gridY = nearestLocation.getGridY();
 
-        // 2. WeatherService를 사용하여 두 종류의 기상 데이터를 비동기적 반환받음
         Mono<List<ItemDto>> nowcastMono = weatherService.getNowcastForLocation(gridX, gridY);
+
+        return nowcastMono
+                .map(this::convertToCombinedDtoFromItem)
+                .onErrorResume(e -> {
+                    return Mono.error(new RuntimeException("초단기 실황 데이터를 가져오는 중 오류가 발생했습니다.", e));
+                });
+    }
+
+    private CombinedWeatherDto convertToCombinedDtoFromItem(List<ItemDto> itemDtos){
+        CombinedWeatherDto combinedDto = new CombinedWeatherDto();
+
+        for (ItemDto dto : itemDtos) {
+            String category = dto.getCategory();
+            String value = dto.getObsrValue();
+
+            switch (category) {
+                case "T1H":
+                    // 1시간 기온
+                    combinedDto.setTemperature(Double.parseDouble(value));
+                    break;
+                case "REH":
+                    // 습도
+                    combinedDto.setHumidity(Integer.parseInt(value));
+                    break;
+                case "PTY":
+                    int ptyCode = Integer.parseInt(value);
+                    String ptyString = combinedDto.getPrecipitationTypeString(ptyCode);
+                    combinedDto.setPrecipitationType(ptyString);
+                    break;
+                case "RN1":
+                    // 1시간 강수량
+                    combinedDto.setPrecipitationAmount(Double.parseDouble(value));
+                    break;
+                case "WSD":
+                    // 풍속
+                    combinedDto.setWindSpeed(Double.parseDouble(value));
+                    break;
+                case "UUU":
+                    // 동서바람성분
+                    combinedDto.setEastWestWindComponent(Double.parseDouble(value));
+                    break;
+                case "VVV":
+                    // 남북바람성분
+                    combinedDto.setNorthSouthWindComponent(Double.parseDouble(value));
+                    break;
+                case "VEC":
+                    // 풍향 (deg)
+                    combinedDto.setWindDirectionDegrees(Double.parseDouble(value));
+                    break;
+            }
+        }
+
+        return combinedDto;
+    }
+
+    public Mono<List<WeatherDisplayDto>> getForecastForUserLocation(double lat, double lng){
+        NearestLocationDto nearestLocation;
+
+        try {
+            nearestLocation = getNearestGridCoordinates(lat, lng);
+        } catch (NoSuchElementException e) {
+            // 위치 정보를 찾지 못하면 오류 Mono를 반환
+            return Mono.error(e);
+        }
+
+        Integer gridX = nearestLocation.getGridX();
+        Integer gridY = nearestLocation.getGridY();
+
         Mono<List<ItemDto>> forecastMono = weatherService.getForecastForLocation(gridX, gridY);
 
-        // 3. 두 Mono를 합쳐 하나의 Mono<List<ItemDto>>로 만듬
-        //    Mono.zip을 사용하여 두 API 호출이 모두 완료될 때까지 기다린 후 결과를 병합
-        return Mono.zip(nowcastMono, forecastMono)
-                .map(tuple -> {
-                    List<ItemDto> combinedList = new ArrayList<>();
-                    combinedList.addAll(tuple.getT1()); // 초단기 실황 결과
-                    combinedList.addAll(tuple.getT2()); // 초단기 예보 결과
-                    return combinedList;
-                })
-                // 만약 하나라도 오류가 발생하면, 오류를 전파
+        return forecastMono
+                .map(itemDtos -> itemDtos.stream()
+                        .map(this::convertToDisplayDto)
+                        .collect(Collectors.toList()))
                 .onErrorResume(e -> {
-                    return Mono.error(new RuntimeException("날씨 데이터를 가져오는 중 오류가 발생했습니다.", e));
+                    return Mono.error(new RuntimeException("초단기 실황 데이터를 가져오는 중 오류가 발생했습니다.", e));
                 });
+    }
+
+    private WeatherDisplayDto convertToDisplayDto(ItemDto itemDto) {
+        WeatherDisplayDto displayDto = new WeatherDisplayDto();
+
+        String categoryName = WeatherCategoryMapper.getCategoryName(itemDto.getCategory());
+        displayDto.setCategoryName(categoryName);
+        displayDto.setCategory(itemDto.getCategory());
+
+        if (itemDto.getBaseDate() != null) {
+            LocalDate baseDate = LocalDate.parse(itemDto.getBaseDate(), DATE_INPUT_FORMATTER);
+            displayDto.setBaseDate(baseDate.format(DATE_OUTPUT_FORMATTER));
+        }
+
+        if (itemDto.getBaseTime() != null) {
+            LocalTime baseTime = LocalTime.parse(itemDto.getBaseTime(), TIME_INPUT_FORMATTER);
+            displayDto.setBaseTime(baseTime.format(TIME_OUTPUT_FORMATTER));
+        }
+
+        if (itemDto.getFcstDate() != null) {
+            LocalDate fcstDate = LocalDate.parse(itemDto.getFcstDate(), DATE_INPUT_FORMATTER);
+            displayDto.setFcstDate(fcstDate.format(DATE_OUTPUT_FORMATTER));
+        }
+
+        if (itemDto.getFcstTime() != null) {
+            LocalTime fcstTime = LocalTime.parse(itemDto.getFcstTime(), TIME_INPUT_FORMATTER);
+            displayDto.setFcstTime(fcstTime.format(TIME_OUTPUT_FORMATTER));
+        }
+
+        String unit = WeatherCategoryMapper.getUnit(itemDto.getCategory());
+
+        if (itemDto.getObsrValue() != null && !itemDto.getObsrValue().isEmpty()) {
+            String obsrValueWithUnit = itemDto.getObsrValue() + unit;
+            displayDto.setObsrValue(obsrValueWithUnit);
+        } else {
+            displayDto.setObsrValue("-");
+        }
+
+        if (itemDto.getFcstValue() != null && !itemDto.getFcstValue().isEmpty()) {
+            String fcstValueWithUnit = itemDto.getFcstValue() + unit;
+            displayDto.setFcstValue(fcstValueWithUnit);
+        } else {
+            displayDto.setFcstValue("-");
+        }
+
+        displayDto.setNx(itemDto.getNx());
+        displayDto.setNy(itemDto.getNy());
+
+        return displayDto;
     }
 }

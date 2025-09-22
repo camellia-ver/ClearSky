@@ -1,24 +1,11 @@
-        .card-placeholder {
-          height: 150px;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          background-color: #f0f0f0;
-          color: #666;
-          font-weight: bold;
-        }
-        .graph-placeholder, .map-placeholder {
-          height: 300px;
-          background-color: #e9ecef;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          font-weight: bold;
-          color: #555;
-        }
-        .carousel-item {
-          height: 120px;
-        }
-        .carousel-item .card-placeholder {
-          height: 100px;
-        }
+body { padding-top: 20px; }
+
+/* 테이블이 너무 넓어지지 않도록 스크롤 가능하게 설정 */
+.data-table-container {
+    overflow-x: auto;
+    margin-top: 30px;
+}
+
+.data-table {
+    min-width: 1000px; /* 테이블이 너무 좁아지지 않도록 최소 너비 설정 */
+}

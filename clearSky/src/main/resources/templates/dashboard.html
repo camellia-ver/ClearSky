@@ -18,13 +18,71 @@
 </header>
 
 <div class="container pt-3 pb-3">
+    <h2 th:text="${currentLocation} + ' 현재 실황'">서울 현재 실황</h2>
 
     <!-- 상단 요약 카드 영역 -->
     <div class="row mb-4">
         <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-body card-placeholder">
-                    날씨 카드 🌡️<br>기온/습도<br>풍속/강수확률
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">날씨 요약 🌡️</h5>
+                </div>
+                <!-- 날씨 요약 카드 -->
+                <div class="card-body">
+                    <div th:if="${weatherData}" th:remove="tag">
+                        <p>
+                            <strong>현재 기온:</strong>
+                            <span th:text="${weatherData.temperature != null ? #numbers.formatDecimal(weatherData.temperature, 1, 1) + '°C' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>강수 형태:</strong>
+                            <span th:text="${weatherData.precipitationType != null ? weatherData.precipitationType : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>강수량 (1시간):</strong>
+                            <span th:text="${weatherData.precipitationAmount != null ? weatherData.precipitationAmount + 'mm' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>습도:</strong>
+                            <span th:text="${weatherData.humidity != null ? weatherData.humidity + '%' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>풍속:</strong>
+                            <span th:text="${weatherData.windSpeed != null ? weatherData.windSpeed + 'm/s' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>풍향:</strong>
+                            <span th:text="${weatherData.windDirectionDegrees != null ? weatherData.windDirectionDegrees + '°' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>동서 바람 성분 (UUU):</strong>
+                            <span th:text="${weatherData.eastWestWindComponent != null ? weatherData.eastWestWindComponent + 'm/s' : '-'}">-</span>
+                        </p>
+
+                        <p>
+                            <strong>남북 바람 성분 (VVV):</strong>
+                            <span th:text="${weatherData.northSouthWindComponent != null ? weatherData.northSouthWindComponent + 'm/s' : '-'}">-</span>
+                        </p>
+                    </div>
+
+                    <!-- 데이터 없을 경우 표시 -->
+                    <div th:unless="${weatherData}">
+                        <h2>데이터 없음</h2>
+                        <p>현재 기온: -</p>
+                        <p>강수 형태: -</p>
+                        <p>강수량 (1시간): -</p>
+                        <p>습도: -</p>
+                        <p>풍속: -</p>
+                        <p>풍향: -</p>
+                        <p>동서 바람 성분: -</p>
+                        <p>남북 바람 성분: -</p>
+                    </div>
                 </div>
             </div>
         </div>

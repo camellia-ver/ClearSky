@@ -16,6 +16,10 @@ java {
 
 repositories {
 	mavenCentral()
+
+	maven { url 'https://repo.spring.io/milestone' }
+	maven { url 'https://repo.spring.io/snapshot' }
+	maven { url 'https://repo.spring.io/plugins-release' }
 }
 
 dependencies {
@@ -36,6 +40,8 @@ dependencies {
 	implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-xml'
 	implementation 'jakarta.xml.bind:jakarta.xml.bind-api'
 	implementation 'org.glassfish.jaxb:jaxb-runtime'
+	implementation 'io.projectreactor.addons:reactor-extra'
+	implementation 'io.projectreactor:reactor-core'
 }
 
 tasks.named('test') {
