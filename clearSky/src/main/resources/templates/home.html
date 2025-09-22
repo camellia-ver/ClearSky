@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClearSky</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/css/home.css">
     <link rel="stylesheet" href="/css/common.css">
@@ -20,15 +19,14 @@
             <div class="col-md-8">
                 <div class="search-box mx-auto">
                     <form id="search-form" th:action="@{/dashboard}" method="get" class="row g-2 align-items-center">
-                        <div class="col-md-4">
-                            <input type="text" id="level1-input" name="level1" class="form-control" placeholder="시/도">
+                        <div class="col-12 position-relative">
+                            <input type="text" id="location-input" name="location" class="form-control" placeholder="지역 검색" autocomplete="off">
+                            <ul id="autocomplete-list" class="list-group mt-2 position-absolute w-100"></ul>
                         </div>
-                        <div class="col-md-4">
-                            <input type="text" id="level2-input" name="level2" class="form-control" placeholder="구/군" readonly>
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" id="level3-input" name="level3" class="form-control" placeholder="동" readonly>
-                        </div>
+                        <!-- 좌표 저장용 hidden -->
+                        <input type="hidden" id="lat-input" name="lat">
+                        <input type="hidden" id="lng-input" name="lng">
+
                         <div class="col-12 d-grid mt-2">
                             <button type="submit" class="btn btn-primary">🔍 검색</button>
                         </div>
@@ -37,6 +35,12 @@
                     <div class="col-12 d-grid mt-2">
                         <button id="openMapBtn" class="btn btn-outline-light">
                             🗺️ 지도에서 선택
+                        </button>
+                    </div>
+
+                    <div class="col-12 d-grid mt-2">
+                        <button id="getCurrentLocationBtn" class="btn btn-outline-light">
+                            📍 현재 위치 가져오기
                         </button>
                     </div>
                 </div>
@@ -63,7 +67,6 @@
 <!-- Kakao Maps SDK -->
 <script th:src="@{'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + ${kakaoKey} + '&libraries=services&autoload=false'}"></script>
 
-<!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="/js/home.js"></script>
 </body>

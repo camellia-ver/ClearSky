@@ -1,12 +1,16 @@
 package com.portfolio.clearSky.service;
 
+import com.portfolio.clearSky.dto.LocationDTO;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -15,27 +19,42 @@ public class AdministrativeBoundaryService {
     private final AdministrativeBoundaryRepository repository;
 
     /**
-     * level1~level3를 기반으로 AdministrativeBoundary 조회
-     * @param level1 1단계 행정구역 (필수)
-     * @param level2 2단계 행정구역 (선택)
-     * @param level3 3단계 행정구역 (선택)
-     * @return 조회 결과 Optional
+     * DB를 조회하여 자동완성 결과를 반환합니다.
+     * @param query 사용자가 입력한 검색어
+     * @return 검색된 LocationDto 리스트 (최대 10개)
      */
-    public Optional<AdministrativeBoundary> getBoundary(String level1, String level2, String level3){
-        if (level1 == null || level1.isBlank()) {
-            return Optional.empty();
+    public List<LocationDTO> searchAutocomplete(String query) {
+        if (query == null || query.trim().length() < 2) {
+            return List.of();
         }
 
-        Optional<AdministrativeBoundary> boundaryOpt;
+        // Pageable 객체를 사용하여 DB 쿼리 레벨에서 결과 개수를 10개로 제한
+        Pageable topTen = PageRequest.of(0, 10);
 
-        if (level2 != null && !level2.isBlank() && level3 != null && !level3.isBlank()) {
-            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3Containing(level1, level2, level3);
-        } else if (level2 != null && !level2.isBlank()) {
-            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2ContainingAndAdmLevel3IsNull(level1, level2);
-        } else {
-            boundaryOpt = repository.findByAdmLevel1AndAdmLevel2IsNullAndAdmLevel3IsNull(level1);
+        // 1. Repository를 사용하여 DB에서 주소 검색
+        List<AdministrativeBoundary> entities = repository.findByCombinedAddressContaining(query, topTen);
+
+        // 2. 검색 결과가 많을 경우를 대비해 상위 10개만 DTO로 변환하여 클라이언트에 전달 (최적화)
+        return entities.stream()
+                .map(this::convertToDto) // Entity를 DTO로 변환
+                .collect(Collectors.toList());
+    }
+
+    // Entity를 DTO로 변환하는 헬퍼 메서드
+    private LocationDTO convertToDto(AdministrativeBoundary entity) {
+        LocationDTO dto = new LocationDTO();
+        dto.setFull_address(entity.getFullAddress());
+
+        // 위도(latitude)를 십진수로 변환하여 설정
+        if (entity.getLatitude() != null) {
+            dto.setLat(entity.getLatitude().toDecimal());
         }
 
-        return boundaryOpt;
+        // 경도(longitude)를 십진수로 변환하여 설정
+        if (entity.getLongitude() != null) {
+            dto.setLng(entity.getLongitude().toDecimal());
+        }
+
+        return dto;
     }
 }

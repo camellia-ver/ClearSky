@@ -53,4 +53,19 @@ public class AdministrativeBoundary {
     private Coordinate latitude;
 
     private LocalDate locUpdate;
+
+    @Transient // DB에 저장되지 않는 필드
+    public String getFullAddress() {
+        String fullAddress = admLevel1;
+
+        if (admLevel2 != null && !admLevel2.isEmpty()){
+            fullAddress = fullAddress + " " + admLevel2;
+        }
+
+        if (admLevel3 != null && !admLevel3.isEmpty()){
+            fullAddress = fullAddress + " " + admLevel3;
+        }
+
+        return fullAddress;
+    }
 }

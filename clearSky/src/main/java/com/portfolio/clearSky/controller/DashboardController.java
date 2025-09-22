@@ -29,38 +29,38 @@ public class DashboardController {
             @RequestParam(value="level2", required=false) String level2,
             @RequestParam(value="level3", required=false) String level3,
             Model model){
-        if (level1 == null || level1.isBlank()) {
-            log.warn("level1 누락");
-            model.addAttribute("weatherData", List.of());
-            return "dashboard";
-        }
-
-        String fullRegion = addressService.convertRegionName(level1);
-        Optional<AdministrativeBoundary> abOpt = administrativeBoundaryService.getBoundary(fullRegion, level2, level3);
-
-        if (abOpt.isEmpty()) {
-            log.warn("행정구역을 찾을 수 없습니다: {}, {}, {}", fullRegion, level2, level3);
-            model.addAttribute("weatherData", List.of());
-            return "dashboard";
-        }
-
-        AdministrativeBoundary ab = abOpt.get();
-        // 비동기 대신 blocking으로 처리
-        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
-                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
-                .onErrorReturn(List.of())
-                .block();  // 주의: 요청 지연이 발생할 수 있음
-
-        // 콘솔에 출력
-                System.out.println("weatherData: " + weatherData);
-
-        // 또는 자세히 보기 위해 각 아이템을 반복
-                if (weatherData != null) {
-                    weatherData.forEach(System.out::println);
-                }
-
-        // 모델에 추가
-                model.addAttribute("weatherData", weatherData);
+//        if (level1 == null || level1.isBlank()) {
+//            log.warn("level1 누락");
+//            model.addAttribute("weatherData", List.of());
+//            return "dashboard";
+//        }
+//
+//        String fullRegion = addressService.convertRegionName(level1);
+//        Optional<AdministrativeBoundary> abOpt = administrativeBoundaryService.getBoundary(fullRegion, level2, level3);
+//
+//        if (abOpt.isEmpty()) {
+//            log.warn("행정구역을 찾을 수 없습니다: {}, {}, {}", fullRegion, level2, level3);
+//            model.addAttribute("weatherData", List.of());
+//            return "dashboard";
+//        }
+//
+//        AdministrativeBoundary ab = abOpt.get();
+//        // 비동기 대신 blocking으로 처리
+//        List<ItemDto> weatherData = weatherService.getNowcastForLocation(ab)
+//                .doOnError(e -> log.error("Weather API error: {}", e.getMessage()))
+//                .onErrorReturn(List.of())
+//                .block();  // 주의: 요청 지연이 발생할 수 있음
+//
+//        // 콘솔에 출력
+//                System.out.println("weatherData: " + weatherData);
+//
+//        // 또는 자세히 보기 위해 각 아이템을 반복
+//                if (weatherData != null) {
+//                    weatherData.forEach(System.out::println);
+//                }
+//
+//        // 모델에 추가
+//                model.addAttribute("weatherData", weatherData);
 
 
         return "dashboard";

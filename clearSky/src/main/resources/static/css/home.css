@@ -22,7 +22,6 @@
     }
 }
 
-/* 배경 오버레이 */
 .main-banner::before {
     content: "";
     position: absolute;
@@ -35,8 +34,7 @@
 /* 검색 박스 */
 .search-box {
     position: relative;
-    z-index: 2;
-    pointer-events: auto;
+    z-index: 1020;
     max-width: 500px;
     width: 100%;
     display: flex;
@@ -46,7 +44,7 @@
     background-color: rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
     box-shadow: 0 8px 20px rgba(0,0,0,0.4);
-    transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s ease;
+    transition: transform 0.8s cubic-bezier(0.4,0,0.2,1), background-color 0.5s ease;
 }
 
 .search-box.slide-up {
@@ -54,7 +52,44 @@
     background-color: rgba(255, 255, 255, 0.25);
 }
 
+/* 자동완성 리스트 */
+#autocomplete-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 0.25rem;
+    margin-top: 5px;
+    padding-left: 0;
+    z-index: 1050;
+}
+
+#autocomplete-list li {
+    cursor: pointer;
+    padding: 8px 12px;
+}
+
+#autocomplete-list li:hover {
+    background-color: #f0f0f0;
+}
+
+/* 모달 지도 */
 #modal-map {
     width: 100%;
-    height: 500px; /* 최소 높이 */
+    height: 500px;
+}
+
+@media (max-width: 576px) {
+    .search-box {
+        padding: 15px;
+        max-width: 95%;
+    }
+
+    #autocomplete-list {
+        max-height: 150px;
+    }
 }
