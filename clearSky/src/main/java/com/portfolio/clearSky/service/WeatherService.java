@@ -6,7 +6,6 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import com.portfolio.clearSky.common.cache.CacheKey;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.ResponseWrapper;
-import com.portfolio.clearSky.model.AdministrativeBoundary;
 import com.portfolio.clearSky.model.emuns.ForecastType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,22 +42,24 @@ public class WeatherService {
     private final AsyncLoadingCache<CacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
             .expireAfterWrite(40, TimeUnit.HOURS)
             .maximumSize(1000)
-            .buildAsync((key, executor) -> fetchDataForKey(key, key.getAb()).toFuture());
+            .buildAsync((key, executor) -> fetchDataForKey(key).toFuture());
 
     // 초단기 실황
-    public Mono<List<ItemDto>> getNowcastForLocation(AdministrativeBoundary ab) {
+    public Mono<List<ItemDto>> getNowcastForLocation(Integer gridX, Integer gridY) {
         String baseDate = getBaseDate();
         String baseTime = getNowcastBaseTime();
-        CacheKey key = new CacheKey(ab.getId(), baseDate, baseTime, ForecastType.NOWCAST, ab);
+
+        CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.NOWCAST, gridX, gridY);
         return getOrFetch(key);
     }
 
 
     // 초단기 예보
-    public Mono<List<ItemDto>> getForecastForLocation(AdministrativeBoundary ab) {
+    public Mono<List<ItemDto>> getForecastForLocation(Integer gridX, Integer gridY) {
         String baseDate = getBaseDate();
         String baseTime = getForecastBaseTime();
-        CacheKey key = new CacheKey(ab.getId(), baseDate, baseTime, ForecastType.FORECAST, ab);
+
+        CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.FORECAST, gridX, gridY);
         return getOrFetch(key);
     }
 
@@ -66,29 +67,29 @@ public class WeatherService {
         return Mono.fromFuture(() -> cache.get(key));
     }
 
-    private Mono<List<ItemDto>> fetchDataForKey(CacheKey key, AdministrativeBoundary ab) {
-        String url = buildUrlForKey(key, ab).toString();
-        return fetchDataFromApi(url, key.getAdId());
+    private Mono<List<ItemDto>> fetchDataForKey(CacheKey key) {
+        String url = buildUrlForKey(key).toString();
+        return fetchDataFromApi(url);
     }
 
-    private URI buildUrlForKey(CacheKey key, AdministrativeBoundary ab) {
+    private URI buildUrlForKey(CacheKey key) {
         if (key.getType() == ForecastType.NOWCAST) {
-            return buildUrl(ultraShortNowcastApiUrl, key.getBaseDate(), key.getBaseTime(), ab);
+            return buildUrl(ultraShortNowcastApiUrl, key.getBaseDate(), key.getBaseTime(), key.getGridX(), key.getGridY());
         } else {
-            return buildUrl(ultraShortForecastApiUrl, key.getBaseDate(), key.getBaseTime(), ab);
+            return buildUrl(ultraShortForecastApiUrl, key.getBaseDate(), key.getBaseTime(), key.getGridX(), key.getGridY());
         }
     }
 
-    private Mono<List<ItemDto>> fetchDataFromApi(String url, Long abId) {
+    private Mono<List<ItemDto>> fetchDataFromApi(String url) {
         return webClient.get()
                 .uri(url)
                 .header("Content-Type", "application/xml")
                 .retrieve()
                 .bodyToMono(String.class)
-                .map(xml -> parseXml(xml, abId));
+                .map(this::parseXml);
     }
 
-    private List<ItemDto> parseXml(String xml, Long abId) {
+    private List<ItemDto> parseXml(String xml) {
         try {
             XmlMapper xmlMapper = new XmlMapper();
             ResponseWrapper wrapper = xmlMapper.readValue(xml, ResponseWrapper.class);
@@ -105,15 +106,15 @@ public class WeatherService {
         }
     }
 
-    private URI buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
+    private URI buildUrl(String baseUrl, String baseDate, String baseTime, Integer gridX, Integer gridY){
         return UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("serviceKey", serviceKey)
                 .queryParam("numOfRows", 10)
                 .queryParam("pageNo", 1)
                 .queryParam("base_date", baseDate)
                 .queryParam("base_time", baseTime)
-                .queryParam("nx", ab.getGridX())
-                .queryParam("ny", ab.getGridY())
+                .queryParam("nx", gridX)
+                .queryParam("ny", gridY)
                 .build(true)
                 .toUri();
     }

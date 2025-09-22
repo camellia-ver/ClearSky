@@ -10,9 +10,9 @@ import lombok.Getter;
 @AllArgsConstructor
 @EqualsAndHashCode
 public class CacheKey {
-    private final Long adId;
     private final String baseDate;
     private final String baseTime;
     private final ForecastType type;
-    private AdministrativeBoundary ab;
+    private final Integer gridX;
+    private final Integer gridY;
 }

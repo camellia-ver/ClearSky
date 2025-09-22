@@ -1,5 +1,6 @@
 package com.portfolio.clearSky.controller;
 
+import com.portfolio.clearSky.dto.NearestLocationDto;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
 import com.portfolio.clearSky.service.WeatherService;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +23,7 @@ public class DashboardController {
             @RequestParam(value = "lng") double lng,
             Model model){
 
-        System.out.println("받은 위도: " + lat);
-        System.out.println("받은 경도: " + lng);
-
-        System.out.println("보정 위도: " + administrativeBoundaryService.getOptimalLocation(lat, lng).getGridX());
-        System.out.println("보정 경도: " + administrativeBoundaryService.getOptimalLocation(lat, lng).getGridY());
+        NearestLocationDto correctionPoint = administrativeBoundaryService.getOptimalLocation(lat, lng);
 
 
 //        if (level1 == null || level1.isBlank()) {
