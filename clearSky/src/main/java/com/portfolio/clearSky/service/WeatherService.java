@@ -4,6 +4,7 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.portfolio.clearSky.common.cache.CacheKey;
+import com.portfolio.clearSky.dto.BaseDateTimeDto;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.ResponseWrapper;
 import com.portfolio.clearSky.model.emuns.ForecastType;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -46,8 +48,9 @@ public class WeatherService {
 
     // 초단기 실황
     public Mono<List<ItemDto>> getNowcastForLocation(Integer gridX, Integer gridY) {
-        String baseDate = getBaseDate();
-        String baseTime = getNowcastBaseTime();
+        BaseDateTimeDto baseDateTime = getNowcastBaseDateTime();
+        String baseDate = baseDateTime.getBaseDate();
+        String baseTime = baseDateTime.getBaseTime();
 
         CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.NOWCAST, gridX, gridY);
         return getOrFetch(key);
@@ -56,8 +59,9 @@ public class WeatherService {
 
     // 초단기 예보
     public Mono<List<ItemDto>> getForecastForLocation(Integer gridX, Integer gridY) {
-        String baseDate = getBaseDate();
-        String baseTime = getForecastBaseTime();
+        BaseDateTimeDto baseDateTime = getForecastBaseDateTime();
+        String baseDate = baseDateTime.getBaseDate();
+        String baseTime = baseDateTime.getBaseTime();
 
         CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.FORECAST, gridX, gridY);
         return getOrFetch(key);
@@ -109,7 +113,7 @@ public class WeatherService {
     private URI buildUrl(String baseUrl, String baseDate, String baseTime, Integer gridX, Integer gridY){
         return UriComponentsBuilder.fromUriString(baseUrl)
                 .queryParam("serviceKey", serviceKey)
-                .queryParam("numOfRows", 10)
+                .queryParam("numOfRows", 100)
                 .queryParam("pageNo", 1)
                 .queryParam("base_date", baseDate)
                 .queryParam("base_time", baseTime)
@@ -119,33 +123,59 @@ public class WeatherService {
                 .toUri();
     }
 
-    // 날짜 yyyyMMdd
-    private String getBaseDate() {
-        LocalDate today = LocalDate.now();
-        return today.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
-    }
-
     private String buildBaseTime(Supplier<String> timeSupplier){
         return timeSupplier.get();
     }
 
-    // 초단기실황 기준 시각 (매시각 정시 기준, 10분 전이면 이전 시각 사용)
-    private String getNowcastBaseTime() {
-        LocalTime now = LocalTime.now();
-        LocalTime baseTime = now.getMinute() < 10
-                ? now.minusHours(1).withMinute(0)
-                : now.withMinute(0);
+    private BaseDateTimeDto getNowcastBaseDateTime(){
+        LocalDateTime now = LocalDateTime.now();
 
-        return baseTime.format(DateTimeFormatter.ofPattern("HHmm"));
-    }
-
-    // 초단기예보 기준 시각 (매시각 30분 발표, 45분 전이면 이전 시각 사용)
-    private String getForecastBaseTime() {
-        LocalTime now = LocalTime.now();
-        LocalTime baseTime = now.getMinute() < 45
+        // 1. 발표 기준 시각 계산 (매시각 30분 발표, 45분 전이면 이전 시각 사용)
+        LocalDateTime baseDateTime = now.getMinute() < 45
                 ? now.minusHours(1).withMinute(30)
                 : now.withMinute(30);
 
-        return baseTime.format(DateTimeFormatter.ofPattern("HHmm"));
+        // 2. 날짜와 시간 추출
+        String baseDate = baseDateTime.format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String baseTime = baseDateTime.format(DateTimeFormatter.ofPattern("HHmm"));
+
+        return new BaseDateTimeDto(baseDate, baseTime);
+    }
+
+    private BaseDateTimeDto getForecastBaseDateTime() {
+        // 단기 예보 발표 시각 리스트 (HH)
+        final List<Integer> times = List.of(2, 5, 8, 11, 14, 17, 20, 23);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        // 1. 발표 기준 시각 찾기
+        int currentHour = now.getHour();
+        int currentMinute = now.getMinute();
+
+        // 가장 가까운 과거 발표 시각 (HH) 찾기
+        int baseHour = times.stream()
+                .filter(t -> t <= currentHour) // 현재 시각보다 같거나 작은 시각만 필터링
+                .max(Integer::compare)
+                .orElseGet(() ->
+                        // 오늘 발표 시간이 없으면 (새벽 02시 이전), 어제 23시를 사용
+                        23
+                );
+
+        // 2. baseTime 설정
+        // 단기 예보는 발표 시각의 '00분'에 발표되며, 보통 40분 이후에 데이터가 확정된다고 가정
+        LocalTime baseTime = LocalTime.of(baseHour, 0);
+
+        // 3. baseDate 설정
+        LocalDate baseDate = now.toLocalDate();
+
+        // 4. 자정 처리: baseHour가 23이고 현재 시각이 00시 ~ 01시 40분 사이인 경우 (어제 발표 시각을 사용)
+        if (baseHour == 23 && currentHour < 2) {
+            baseDate = baseDate.minusDays(1);
+        }
+
+        return new BaseDateTimeDto(
+                baseDate.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
+                baseTime.format(DateTimeFormatter.ofPattern("HHmm"))
+        );
     }
 }
