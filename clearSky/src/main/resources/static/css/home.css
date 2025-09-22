@@ -93,3 +93,9 @@
         max-height: 150px;
     }
 }
+
+.autocomplete-active {
+    background-color: #007bff; /* 파란색 배경 */
+    color: #ffffff; /* 흰색 텍스트 */
+    cursor: pointer; /* 클릭 가능한 항목임을 나타냅니다 */
+}
