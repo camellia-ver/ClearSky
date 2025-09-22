@@ -8,21 +8,19 @@ import java.util.Map;
 
 @Data
 public class CombinedWeatherDto {
-    // 1. 기온 (T1H)
+    // 기온 (T1H)
     private Double temperature;
-    // 2. 습도 (REH)
+    // 습도 (REH)
     private Integer humidity;
-    // 3. 강수 형태 (PTY)
+    // 강수 형태 (PTY)
     private String precipitationType;
-    // 4. 강수량 (RN1)
+    // 강수량 (RN1)
     private Double precipitationAmount; // RN1 값 사용
-    // 5. 풍속 (WSD)
+    // 풍속 (WSD)
     private Double windSpeed;
-    // 6. 동서바람성분 (UUU)
-    private Double eastWestWindComponent;
-    // 7. 남북바람성분 (VVV)
-    private Double northSouthWindComponent;
-    // 8. 풍향 (VEC)
+    private Double calculatedWindSpeed; // 계산된 풍속
+    private String calculatedWindDirectionString; // 계산된 풍향 문자열
+    // 풍향 (VEC)
     private Double windDirectionDegrees; // 각도(deg) 값
 
     private static final Map<Integer, String> PTY_CODE_MAP;

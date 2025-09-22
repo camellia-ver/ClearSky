@@ -106,6 +106,9 @@ public class AdministrativeBoundaryService {
     private CombinedWeatherDto convertToCombinedDtoFromItem(List<ItemDto> itemDtos){
         CombinedWeatherDto combinedDto = new CombinedWeatherDto();
 
+        double uuu = 0.0;
+        double vvv = 0.0;
+
         for (ItemDto dto : itemDtos) {
             String category = dto.getCategory();
             String value = dto.getObsrValue();
@@ -134,11 +137,11 @@ public class AdministrativeBoundaryService {
                     break;
                 case "UUU":
                     // 동서바람성분
-                    combinedDto.setEastWestWindComponent(Double.parseDouble(value));
+                    uuu = Double.parseDouble(value);
                     break;
                 case "VVV":
                     // 남북바람성분
-                    combinedDto.setNorthSouthWindComponent(Double.parseDouble(value));
+                    vvv = Double.parseDouble(value);
                     break;
                 case "VEC":
                     // 풍향 (deg)
@@ -146,6 +149,40 @@ public class AdministrativeBoundaryService {
                     break;
             }
         }
+
+        final double THRESHOLD = 0.1;
+        String windDirection = "";
+
+        if (Math.abs(uuu) < THRESHOLD && Math.abs(vvv) < THRESHOLD){
+            // 바람이 거의 없을 때
+            windDirection = "무풍";
+        }else {
+            // 1. 남북 성분 (VVV)을 먼저 분석하여 방향 문자열의 앞부분 결정 (남/북)
+            if (vvv < -THRESHOLD) {
+                windDirection += "북"; // VVV가 음수(남쪽 성분) -> 북쪽에서 옴
+            } else if (vvv > THRESHOLD) {
+                windDirection += "남"; // VVV가 양수(북쪽 성분) -> 남쪽에서 옴
+            }
+
+            // 2. 동서 성분 (UUU)을 분석하여 방향 문자열의 뒷부분 결정 (동/서)
+            if (uuu < -THRESHOLD) {
+                windDirection += "동"; // UUU가 음수(서쪽 성분) -> 동쪽에서 옴
+            } else if (uuu > THRESHOLD) {
+                windDirection += "서"; // UUU가 양수(동쪽 성분) -> 서쪽에서 옴
+            }
+
+            // 최종적으로 '풍'을 붙여줍니다.
+            if (!windDirection.isEmpty() && !windDirection.equals("무풍")) {
+                windDirection += "풍";
+            }
+        }
+
+        // 풍속 (합성 속도) 계산
+        // 피타고라스 정리: Speed = sqrt(UUU^2 + VVV^2)
+        double windSpeed = Math.sqrt(uuu * uuu + vvv * vvv);
+
+        combinedDto.setCalculatedWindDirectionString(windDirection);
+        combinedDto.setWindSpeed(windSpeed);
 
         return combinedDto;
     }

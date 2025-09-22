@@ -55,23 +55,23 @@
                         </p>
 
                         <p>
-                            <strong>풍속:</strong>
-                            <span th:text="${weatherData.windSpeed != null ? weatherData.windSpeed + 'm/s' : '-'}">-</span>
+                            <strong>풍속 (관측):</strong>
+                            <span th:text="${weatherData.windSpeed != null ? #numbers.formatDecimal(weatherData.windSpeed, 1, 'COMMA', 1, 'POINT') + 'm/s' : '-'}">-</span>
                         </p>
 
                         <p>
-                            <strong>풍향:</strong>
-                            <span th:text="${weatherData.windDirectionDegrees != null ? weatherData.windDirectionDegrees + '°' : '-'}">-</span>
+                            <strong>풍향 (각도):</strong>
+                            <span th:text="${weatherData.windDirectionDegrees != null ? #numbers.formatDecimal(weatherData.windDirectionDegrees, 1, 'COMMA', 1, 'POINT') + '°' : '-'}">-</span>
                         </p>
 
                         <p>
-                            <strong>동서 바람 성분 (UUU):</strong>
-                            <span th:text="${weatherData.eastWestWindComponent != null ? weatherData.eastWestWindComponent + 'm/s' : '-'}">-</span>
+                            <strong>8방위 풍향 (계산):</strong>
+                            <span th:text="${weatherData.calculatedWindDirectionString != null ? weatherData.calculatedWindDirectionString : '-'}">-</span>
                         </p>
 
                         <p>
-                            <strong>남북 바람 성분 (VVV):</strong>
-                            <span th:text="${weatherData.northSouthWindComponent != null ? weatherData.northSouthWindComponent + 'm/s' : '-'}">-</span>
+                            <strong>계산된 풍속:</strong>
+                            <span th:text="${weatherData.calculatedWindSpeed != null ? #numbers.formatDecimal(weatherData.calculatedWindSpeed, 1, 'COMMA', 1, 'POINT') + 'm/s' : '-'}">-</span>
                         </p>
                     </div>
 
