@@ -42,7 +42,10 @@ public interface AdministrativeBoundaryRepository extends JpaRepository<Administ
                             COS(RADIANS(:targetLat)) * COS(RADIANS(ab.lat_deg + (ab.lat_min / 60) + (ab.lat_sec + (ab.lat_sec100 / 100)) / 3600)) * COS(RADIANS(ab.lon_deg + (ab.lon_min / 60) + (ab.lon_sec + (ab.lon_sec100 / 100)) / 3600) - RADIANS(:targetLng)) + 
                             SIN(RADIANS(:targetLat)) * SIN(RADIANS(ab.lat_deg + (ab.lat_min / 60) + (ab.lat_sec + (ab.lat_sec100 / 100)) / 3600))
                         )
-                    ) AS distanceKm 
+                    ) AS distanceKm,
+                      ab.adm_level1,
+                      ab.adm_level2,
+                      ab.adm_level3
                 FROM 
                     administrative_boundary ab
                 ORDER BY 
