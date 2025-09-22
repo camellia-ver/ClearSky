@@ -1,14 +1,17 @@
 package com.portfolio.clearSky.service;
 
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.portfolio.clearSky.common.cache.CacheKey;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.ResponseWrapper;
 import com.portfolio.clearSky.model.AdministrativeBoundary;
+import com.portfolio.clearSky.model.emuns.ForecastType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -17,6 +20,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.springframework.web.reactive.function.client.WebClient;
@@ -36,56 +40,69 @@ public class WeatherService {
     private String serviceKey;
 
     private final WebClient webClient;
+    private final AsyncLoadingCache<CacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
+            .expireAfterWrite(40, TimeUnit.HOURS)
+            .maximumSize(1000)
+            .buildAsync((key, executor) -> fetchDataForKey(key, key.getAb()).toFuture());
 
-    /**
-     * 특정 지역 초단기 실황 가져오기
-     */
-    public Mono<List<ItemDto>> getNowcastForLocation(AdministrativeBoundary ab){
+    // 초단기 실황
+    public Mono<List<ItemDto>> getNowcastForLocation(AdministrativeBoundary ab) {
         String baseDate = getBaseDate();
         String baseTime = getNowcastBaseTime();
-        String url = buildUrl(ultraShortNowcastApiUrl, baseDate, baseTime, ab).toString();
-
-        return fetchDataFromApi(url, ab.getId());
+        CacheKey key = new CacheKey(ab.getId(), baseDate, baseTime, ForecastType.NOWCAST, ab);
+        return getOrFetch(key);
     }
 
-    /**
-     * 특정 지역 초단기 예보 가져오기
-     */
+
+    // 초단기 예보
     public Mono<List<ItemDto>> getForecastForLocation(AdministrativeBoundary ab) {
         String baseDate = getBaseDate();
         String baseTime = getForecastBaseTime();
-        String url = buildUrl(ultraShortForecastApiUrl, baseDate, baseTime, ab).toString();
-
-        return fetchDataFromApi(url, ab.getId());
+        CacheKey key = new CacheKey(ab.getId(), baseDate, baseTime, ForecastType.FORECAST, ab);
+        return getOrFetch(key);
     }
 
-    /**
-     * API 호출 후 ItemDto 리스트 반환
-     */
-    public Mono<List<ItemDto>> fetchDataFromApi(String url, Long abId) {
+    private Mono<List<ItemDto>> getOrFetch(CacheKey key) {
+        return Mono.fromFuture(() -> cache.get(key));
+    }
+
+    private Mono<List<ItemDto>> fetchDataForKey(CacheKey key, AdministrativeBoundary ab) {
+        String url = buildUrlForKey(key, ab).toString();
+        return fetchDataFromApi(url, key.getAdId());
+    }
+
+    private URI buildUrlForKey(CacheKey key, AdministrativeBoundary ab) {
+        if (key.getType() == ForecastType.NOWCAST) {
+            return buildUrl(ultraShortNowcastApiUrl, key.getBaseDate(), key.getBaseTime(), ab);
+        } else {
+            return buildUrl(ultraShortForecastApiUrl, key.getBaseDate(), key.getBaseTime(), ab);
+        }
+    }
+
+    private Mono<List<ItemDto>> fetchDataFromApi(String url, Long abId) {
         return webClient.get()
                 .uri(url)
-                .header(MediaType.APPLICATION_XML_VALUE)
+                .header("Content-Type", "application/xml")
                 .retrieve()
-                .bodyToMono(String.class) // 먼저 문자열로 받기
-                .map(xml -> {
-                    try {
-                        XmlMapper xmlMapper = new XmlMapper();
-                        ResponseWrapper wrapper = xmlMapper.readValue(xml, ResponseWrapper.class);
+                .bodyToMono(String.class)
+                .map(xml -> parseXml(xml, abId));
+    }
 
-                        if (wrapper.getBody() != null
-                                && wrapper.getBody().getItems() != null
-                                && wrapper.getBody().getItems().getItem() != null) {
-                            return wrapper.getBody().getItems().getItem();
-                        } else {
-                            log.warn("⚠️ No items returned for abId={}", abId);
-                            return Collections.<ItemDto>emptyList();
-                        }
-                    } catch (Exception e) {
-                        log.error("❌ XML parsing failed for abId={}", abId, e);
-                        return Collections.<ItemDto>emptyList();
-                    }
-                });
+    private List<ItemDto> parseXml(String xml, Long abId) {
+        try {
+            XmlMapper xmlMapper = new XmlMapper();
+            ResponseWrapper wrapper = xmlMapper.readValue(xml, ResponseWrapper.class);
+
+            if (wrapper.getBody() != null && wrapper.getBody().getItems() != null
+                    && wrapper.getBody().getItems().getItem() != null) {
+                return wrapper.getBody().getItems().getItem();
+            } else {
+                return Collections.emptyList();
+            }
+        } catch (Exception e) {
+            log.error("XML 파싱 실패: {}", e.getMessage());
+            return Collections.emptyList();
+        }
     }
 
     private URI buildUrl(String baseUrl, String baseDate, String baseTime, AdministrativeBoundary ab){
