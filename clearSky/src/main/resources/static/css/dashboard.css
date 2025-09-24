@@ -1,11 +1,19 @@
-body { padding-top: 20px; }
-
-/* 테이블이 너무 넓어지지 않도록 스크롤 가능하게 설정 */
-.data-table-container {
-    overflow-x: auto;
-    margin-top: 30px;
+body {
+    padding-top: 20px;
 }
 
-.data-table {
-    min-width: 1000px; /* 테이블이 너무 좁아지지 않도록 최소 너비 설정 */
+h2 {
+    font-weight: 700;
+    color: #333;
+}
+
+.card {
+    transition: transform 0.2s ease-in-out;
+}
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.badge {
+    font-size: 1rem;
 }

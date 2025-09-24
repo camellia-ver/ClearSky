@@ -60,13 +60,6 @@ function initializeForecastChart(rawData, canvasId) {
                 yAxisID: 'rain-axis',
                 color: '#36a2eb',
                 type: 'bar'
-            },
-            'POP': {
-                label: '강수확률 (%)',
-                yAxisID: 'temp-axis',
-                color: '#4bc0c0',
-                type: 'line',
-                borderDash: [5, 5]
             }
         };
 
@@ -124,6 +117,17 @@ function initializeForecastChart(rawData, canvasId) {
 
     const chartData = processWeatherDataForDualAxis(rawData);
 
+
+    // 카테고리별 최대값 계산
+    const maxRain = Math.max(
+        ...rawData.filter(item => item.category === "RN1").map(item => parseFloat(item.fcstValue) || 0),
+        0
+    );
+    const maxTemp = Math.max(
+        ...rawData.filter(item => item.category === "T1H").map(item => parseFloat(item.fcstValue) || 0),
+        0
+    );
+
     // 데이터가 없으면 차트를 그리지 않습니다. (선택적)
     if (chartData.labels.length === 0) {
         console.log("No time labels generated. Cannot draw chart.");
@@ -159,14 +163,15 @@ function initializeForecastChart(rawData, canvasId) {
                         maxRotation: 0
                     }
                 },
-                'temp-axis': { // 기온/강수확률 축 (왼쪽)
+                'temp-axis': { // 기온 축 (왼쪽)
                     type: 'linear',
                     position: 'left',
                     title: {
                         display: true,
-                        text: '기온 (°C) / 강수확률 (%)'
+                        text: '기온 (°C)'
                     },
-                    beginAtZero: true
+                    beginAtZero: true,
+                    suggestedMax: maxTemp + 2
                 },
                 'rain-axis': { // 강수량 축 (오른쪽)
                     type: 'linear',
@@ -176,6 +181,7 @@ function initializeForecastChart(rawData, canvasId) {
                         text: '강수량 (mm)'
                     },
                     beginAtZero: true,
+                    suggestedMax: maxRain + 2,
                     grid: {
                         drawOnChartArea: false,
                     }

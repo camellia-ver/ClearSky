@@ -22,109 +22,58 @@
 </header>
 
 <div class="container pt-3 pb-3">
-    <h2 th:text="${currentLocation} + ' 현재 실황'">서울 현재 실황</h2>
+    <h2 class="mb-4">
+        <i class="bi bi-geo-alt-fill text-primary"></i>
+        <span th:text="${currentLocation} + ' 현재 실황'">서울 현재 실황</span>
+    </h2>
 
     <!-- 상단 요약 카드 영역 -->
-    <div class="row mb-4">
-        <div class="col-md-6 mb-3">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">날씨 요약 🌡️</h5>
-                </div>
-                <!-- 날씨 요약 카드 -->
-                <div class="card-body">
-                    <div th:if="${weatherData}" th:remove="tag">
-                        <p>
-                            <strong>현재 기온:</strong>
-                            <span th:text="${weatherData.temperature != null ? #numbers.formatDecimal(weatherData.temperature, 1, 1) + '°C' : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>강수 형태:</strong>
-                            <span th:text="${weatherData.precipitationType != null ? weatherData.precipitationType : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>강수량 (1시간):</strong>
-                            <span th:text="${weatherData.precipitationAmount != null ? weatherData.precipitationAmount + 'mm' : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>습도:</strong>
-                            <span th:text="${weatherData.humidity != null ? weatherData.humidity + '%' : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>풍속 (관측):</strong>
-                            <span th:text="${weatherData.windSpeed != null ? #numbers.formatDecimal(weatherData.windSpeed, 1, 'COMMA', 1, 'POINT') + 'm/s' : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>풍향 (각도):</strong>
-                            <span th:text="${weatherData.windDirectionDegrees != null ? #numbers.formatDecimal(weatherData.windDirectionDegrees, 1, 'COMMA', 1, 'POINT') + '°' : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>8방위 풍향 (계산):</strong>
-                            <span th:text="${weatherData.calculatedWindDirectionString != null ? weatherData.calculatedWindDirectionString : '-'}">-</span>
-                        </p>
-
-                        <p>
-                            <strong>계산된 풍속:</strong>
-                            <span th:text="${weatherData.calculatedWindSpeed != null ? #numbers.formatDecimal(weatherData.calculatedWindSpeed, 1, 'COMMA', 1, 'POINT') + 'm/s' : '-'}">-</span>
-                        </p>
-                    </div>
-
-                    <!-- 데이터 없을 경우 표시 -->
-                    <div th:unless="${weatherData}">
-                        <h2>데이터 없음</h2>
-                        <p>현재 기온: -</p>
-                        <p>강수 형태: -</p>
-                        <p>강수량 (1시간): -</p>
-                        <p>습도: -</p>
-                        <p>풍속: -</p>
-                        <p>풍향: -</p>
-                        <p>동서 바람 성분: -</p>
-                        <p>남북 바람 성분: -</p>
-                    </div>
+    <div class="row g-3 mb-4">
+        <!-- 현재 기온 -->
+        <div class="col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-body d-flex flex-column align-items-center text-center">
+                    <i class="bi bi-thermometer-half fs-1 text-danger mb-2"></i>
+                    <h6 class="text-muted">현재 기온</h6>
+                    <h4 class="fw-bold" th:text="${weatherData.temperature != null ? #numbers.formatDecimal(weatherData.temperature,1,1) + '°C' : '-'}">-</h4>
                 </div>
             </div>
         </div>
-        <div class="col-md-6 mb-3">
-            <div class="card">
-                <div class="card-body card-placeholder">
-                    대기질 카드 💨<br>PM10/PM2.5<br>오존/등급 색상
+
+        <!-- 습도 -->
+        <div class="col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-body d-flex flex-column align-items-center text-center">
+                    <i class="bi bi-droplet-fill fs-1 text-info mb-2"></i>
+                    <h6 class="text-muted">습도</h6>
+                    <h4 class="fw-bold" th:text="${weatherData.humidity != null ? weatherData.humidity + '%' : '-'}">-</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- 풍향 -->
+        <div class="col-md-4 col-sm-6">
+            <div class="card h-100 shadow-sm border-0 rounded-3">
+                <div class="card-body d-flex flex-column align-items-center text-center">
+                    <i class="bi bi-compass-fill fs-1 text-primary mb-2"></i>
+                    <h6 class="text-muted">풍향</h6>
+                    <span class="badge bg-primary p-2" th:text="${weatherData.calculatedWindDirectionString != null ? weatherData.calculatedWindDirectionString : '-'}">-</span>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 중간 시각화 영역 -->
-    <div class="row mb-4">
-        <div class="col-12 mb-3">
-            <div class="graph-placeholder">
-                시간대별 날씨 그래프 📈
-            </div>
-            <div style="height : 500px; margin: 0 auto;">
+    <div class="card shadow-sm border-0 rounded-3 mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <span class="fw-bold">시간대별 날씨 그래프 📈</span>
+        </div>
+        <div class="card-body">
+            <div style="height: 500px;">
                 <canvas id="forecastChart"></canvas>
             </div>
         </div>
-        <div class="col-12 mb-3">
-            <div class="graph-placeholder">
-                대기질 변화 그래프 📊
-            </div>
-        </div>
     </div>
-
-    <!-- 하단 영역 -->
-    <div class="row mb-4">
-        <div class="col-12 mb-3">
-            <div class="map-placeholder">
-                지도 🗺️ (지역 강조 + 대기질 색)
-            </div>
-        </div>
-    </div>
-
 </div>
 
 <!-- Bootstrap JS -->
