@@ -1,11 +1,8 @@
 package com.portfolio.clearSky.util;
 
 import com.portfolio.clearSky.model.AdministrativeBoundary;
-import com.portfolio.clearSky.model.ForecastCodes;
 import com.portfolio.clearSky.repository.AdministrativeBoundaryRepository;
-import com.portfolio.clearSky.repository.ForecastCodesRepository;
 import jakarta.persistence.EntityManager;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.csv.CSVRecord;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -39,26 +36,6 @@ public class CsvUtils {
                           int lineNumber,
                           TransactionTemplate transactionTemplate,
                           AdministrativeBoundaryRepository repository,
-                          EntityManager em){
-        transactionTemplate.execute(status -> {
-            try{
-                repository.saveAll(buffer);
-                em.flush();
-                em.clear();
-                buffer.clear();
-            } catch (Exception e){
-                log.error("Failed saving batch ending at line {}", lineNumber, e);
-                status.setRollbackOnly();// 배치만 롤백
-            }
-
-            return Void.TYPE;
-        });
-    }
-
-    public void saveBatch(List<ForecastCodes> buffer,
-                          int lineNumber,
-                          TransactionTemplate transactionTemplate,
-                          ForecastCodesRepository repository,
                           EntityManager em){
         transactionTemplate.execute(status -> {
             try{

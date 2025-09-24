@@ -7,7 +7,6 @@ import com.portfolio.clearSky.common.cache.CacheKey;
 import com.portfolio.clearSky.dto.BaseDateTimeDto;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.ResponseWrapper;
-import com.portfolio.clearSky.model.emuns.ForecastType;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +20,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
@@ -52,7 +52,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.NOWCAST, gridX, gridY);
+        CacheKey key = new CacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY);
         return getOrFetch(key);
     }
 
@@ -63,7 +63,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, ForecastType.FORECAST, gridX, gridY);
+        CacheKey key = new CacheKey(baseDate, baseTime, "FORECAST", gridX, gridY);
         return getOrFetch(key);
     }
 
@@ -77,7 +77,7 @@ public class WeatherService {
     }
 
     private URI buildUrlForKey(CacheKey key) {
-        if (key.getType() == ForecastType.NOWCAST) {
+        if (Objects.equals(key.getType(), "NOWCAST")) {
             return buildUrl(ultraShortNowcastApiUrl, key.getBaseDate(), key.getBaseTime(), key.getGridX(), key.getGridY());
         } else {
             return buildUrl(ultraShortForecastApiUrl, key.getBaseDate(), key.getBaseTime(), key.getGridX(), key.getGridY());
