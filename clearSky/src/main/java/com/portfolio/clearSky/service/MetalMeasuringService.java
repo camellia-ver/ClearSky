@@ -104,4 +104,22 @@ public class MetalMeasuringService {
                 .build(true)
                 .toUri();
     }
+
+    /**
+     * MetalDataMapper에 정의된 모든 연구소와 항목에 대한 데이터를 비동기적으로 가져옵니다.
+     * 모든 조합에 대해 개별 API 호출을 수행하고 그 결과를 하나의 리스트로 결합합니다.
+     *
+     * @return 모든 MetalDataResponse를 포함하는 Mono<List<MetalDataResponse>>
+     */
+    public Mono<List<MetalDataResponse>> getAllMetalData(){
+        List<String> allStationCodes = List.copyOf(MetalDataMapper.STATION_NAME_MAP.keySet());
+        List<String> allItemCodes = List.copyOf(MetalDataMapper.ITEM_NAME_MAP.keySet());
+
+        return Flux.fromIterable(allStationCodes)
+                .flatMap(stationCode -> Flux.fromIterable(allItemCodes)
+                        .flatMap(itemCode -> getMetalDataForLocation(stationCode, itemCode))
+                )
+                .flatMap(Flux::fromIterable)
+                .collectList();
+    }
 }

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>지역별 중금속 농도 현황</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/map.css">
+    <link rel="stylesheet" href="/css/common.css">
+
+    <script th:src="@{'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + ${kakaoKey} + '&libraries=services&autoload=false'}"></script>
+    <script src="/js/metal-measuring.js"></script>
+</head>
+<body>
+<header>
+    <div th:replace="~{fragments/navbar :: nav}"></div>
+</header>
+
+<div class="container my-4">
+    <h1 class="text-center mb-4">지역별 대기 중 중금속 현황</h1>
+    <div class="table-responsive mb-5">
+        <table class="table table-bordered text-center align-middle">
+            <thead class="table-dark">
+            <tr>
+                <th>지역</th>
+                <th>납 (Pb, µg/m³)</th>
+                <th>니켈 (Ni, µg/m³)</th>
+                <th>망간 (Mn, µg/m³)</th>
+                <th>아연 (Zn, µg/m³)</th>
+                <th>칼슙 (Ca, µg/m³)</th>
+                <th>칼륨 (K, µg/m³)</th>
+                <th>황 (S, µg/m³)</th>
+            </tr>
+            </thead>
+            <tbody id="metalDataTableBody">
+            <tr>
+                <td colspan="5">데이터를 불러오는 중입니다...</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <div class="card shadow p-3">
+        <h5 class="text-center mb-3">중금속 평균 농도 비교</h5>
+        <canvas id="metalChart" height="120"></canvas>
+    </div>
+
+    <div class="legend mt-3">
+        <p><strong>범례</strong></p>
+        <div><span style="background-color: #00FF00; padding:5px; display:inline-block;"></span> 안전 기준 이하</div>
+        <div><span style="background-color: #FFA500; padding:5px; display:inline-block;"></span> 주의 필요</div>
+        <div><span style="background-color: #FF0000; padding:5px; display:inline-block;"></span> 위험 수준</div>
+    </div>
+</div>
+
+</body>
+</html>
