@@ -8,8 +8,7 @@
     <link rel="stylesheet" href="/css/map.css">
     <link rel="stylesheet" href="/css/common.css">
 
-    <script th:src="@{'https://dapi.kakao.com/v2/maps/sdk.js?appkey=' + ${kakaoKey} + '&libraries=services&autoload=false'}"></script>
-    <script src="/js/metal-measuring.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body>
 <header>
@@ -33,25 +32,45 @@
             </tr>
             </thead>
             <tbody id="metalDataTableBody">
-            <tr>
-                <td colspan="5">데이터를 불러오는 중입니다...</td>
-            </tr>
+                <tr th:each="station : ${stationDataList}">
+
+                    <td th:text="${station.getStationName()}">수도권</td>
+
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('납')} ?: '-'">1.234</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('니켈')} ?: '-'">0.5</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('망간')} ?: '-'">0.05</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('아연')} ?: '-'">2.1</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('칼슙')} ?: '-'">10.0</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('칼륨')} ?: '-'">8.5</span>
+                    </td>
+                    <td th:with="itemData=${station.getItemData()}">
+                        <span th:text="${itemData.get('황')} ?: '-'">3.0</span>
+                    </td>
+                </tr>
             </tbody>
         </table>
     </div>
 
     <div class="card shadow p-3">
         <h5 class="text-center mb-3">중금속 평균 농도 비교</h5>
-        <canvas id="metalChart" height="120"></canvas>
-    </div>
-
-    <div class="legend mt-3">
-        <p><strong>범례</strong></p>
-        <div><span style="background-color: #00FF00; padding:5px; display:inline-block;"></span> 안전 기준 이하</div>
-        <div><span style="background-color: #FFA500; padding:5px; display:inline-block;"></span> 주의 필요</div>
-        <div><span style="background-color: #FF0000; padding:5px; display:inline-block;"></span> 위험 수준</div>
+        <canvas id="metalChart" height="500"></canvas>
     </div>
 </div>
 
+<script th:inline="javascript">
+    const METAL_STATION_DATA = [[${stationDataList}]];
+</script>
+<script src="/js/metal-measuring.js"></script>
 </body>
 </html>
