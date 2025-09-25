@@ -16,4 +16,11 @@ public class ItemDto {
     private String fcstValue;
 
     private String categoryName;
+
+    // 대기중 중금속 API
+    private String sdate;
+    private String stationcode;
+    private String itemcode;
+    private String timecode;
+    private String value;
 }

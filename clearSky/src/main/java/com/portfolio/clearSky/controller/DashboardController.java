@@ -1,11 +1,9 @@
 package com.portfolio.clearSky.controller;
 
 import com.portfolio.clearSky.dto.CombinedWeatherDto;
-import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.NearestLocationDto;
 import com.portfolio.clearSky.dto.WeatherDisplayDto;
 import com.portfolio.clearSky.service.AdministrativeBoundaryService;
-import com.portfolio.clearSky.service.WeatherService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;

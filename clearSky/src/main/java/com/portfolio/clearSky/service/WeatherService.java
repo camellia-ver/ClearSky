@@ -52,7 +52,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY);
+        CacheKey key = new CacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY, null, null);
         return getOrFetch(key);
     }
 
@@ -63,7 +63,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, "FORECAST", gridX, gridY);
+        CacheKey key = new CacheKey(baseDate, baseTime, "FORECAST", gridX, gridY, null, null);
         return getOrFetch(key);
     }
 

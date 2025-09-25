@@ -13,4 +13,7 @@ public class CacheKey {
     private final String type;
     private final Integer gridX;
     private final Integer gridY;
+
+    private final String stationcode;
+    private final String itemcode;
 }
