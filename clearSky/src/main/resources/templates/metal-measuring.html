@@ -17,54 +17,47 @@
 
 <div class="container my-4">
     <h1 class="text-center mb-4">지역별 대기 중 중금속 현황</h1>
+
     <div class="table-responsive mb-5">
         <table class="table table-bordered text-center align-middle">
+            <caption class="text-muted">지역별 주요 중금속 농도 (단위: µg/m³)</caption>
             <thead class="table-dark">
             <tr>
                 <th>지역</th>
-                <th>납 (Pb, µg/m³)</th>
-                <th>니켈 (Ni, µg/m³)</th>
-                <th>망간 (Mn, µg/m³)</th>
-                <th>아연 (Zn, µg/m³)</th>
-                <th>칼슙 (Ca, µg/m³)</th>
-                <th>칼륨 (K, µg/m³)</th>
-                <th>황 (S, µg/m³)</th>
+                <th>납 (Pb)</th>
+                <th>니켈 (Ni)</th>
+                <th>망간 (Mn)</th>
+                <th>아연 (Zn)</th>
+                <th>칼슘 (Ca)</th>
+                <th>칼륨 (K)</th>
+                <th>황 (S)</th>
             </tr>
             </thead>
             <tbody id="metalDataTableBody">
-                <tr th:each="station : ${stationDataList}">
-
-                    <td th:text="${station.getStationName()}">수도권</td>
-
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('납')} ?: '-'">1.234</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('니켈')} ?: '-'">0.5</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('망간')} ?: '-'">0.05</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('아연')} ?: '-'">2.1</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('칼슙')} ?: '-'">10.0</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('칼륨')} ?: '-'">8.5</span>
-                    </td>
-                    <td th:with="itemData=${station.getItemData()}">
-                        <span th:text="${itemData.get('황')} ?: '-'">3.0</span>
-                    </td>
-                </tr>
+            <tr th:each="station : ${stationDataList}" th:with="itemData=${station.getItemData()}">
+                <td th:text="${station.getStationName()}">수도권</td>
+                <td><span th:text="${itemData.get('납')} ?: '-'">1.234</span></td>
+                <td><span th:text="${itemData.get('니켈')} ?: '-'">0.5</span></td>
+                <td><span th:text="${itemData.get('망간')} ?: '-'">0.05</span></td>
+                <td><span th:text="${itemData.get('아연')} ?: '-'">2.1</span></td>
+                <td><span th:text="${itemData.get('칼슘')} ?: '-'">10.0</span></td>
+                <td><span th:text="${itemData.get('칼륨')} ?: '-'">8.5</span></td>
+                <td><span th:text="${itemData.get('황')} ?: '-'">3.0</span></td>
+            </tr>
             </tbody>
         </table>
     </div>
 
     <div class="card shadow p-3">
         <h5 class="text-center mb-3">중금속 평균 농도 비교</h5>
-        <canvas id="metalChart" height="500"></canvas>
+        <canvas id="metalChart" style="max-height:500px; width:100%;"></canvas>
+    </div>
+
+    <div class="card shadow p-3 mt-4">
+        <h5 class="text-center mb-3">중금속 농도 요약</h5>
+        <div id="summaryBox" class="row row-cols-1 row-cols-md-3 g-3">
+            <!-- JS에서 카드 자동 생성 -->
+        </div>
     </div>
 </div>
 
