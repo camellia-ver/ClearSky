@@ -3,7 +3,8 @@ package com.portfolio.clearSky.service;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.portfolio.clearSky.common.cache.CacheKey;
+import com.portfolio.clearSky.common.cache.MetalCacheKey;
+import com.portfolio.clearSky.common.cache.WeatherCacheKey;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.MetalDataResponse;
 import com.portfolio.clearSky.dto.ResponseWrapper;
@@ -12,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -21,6 +23,7 @@ import reactor.core.publisher.Mono;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -34,21 +37,17 @@ public class MetalMeasuringService {
     @Value("${open.data.api.key}")
     private String serviceKey;
 
+    private final XmlMapper xmlMapper;
     private final WebClient webClient;
     private final MetalDataMapper metalDataMapper;
 
-    private final AsyncLoadingCache<CacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
+    private final AsyncLoadingCache<MetalCacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
             .expireAfterWrite(2, TimeUnit.HOURS)
             .maximumSize(1000)
             .buildAsync((key, executor) -> fetchDataForKey(key).toFuture());
 
     public Mono<List<MetalDataResponse>> getMetalDataForLocation(String stationcode, String itemcode) {
-        CacheKey key = new CacheKey(
-                null, // baseDate (날씨 API에서만 사용)
-                null, // baseTime (날씨 API에서만 사용)
-                "METAL", // 새로운 API를 구별할 고유 타입
-                null, // gridX (날씨 API에서만 사용)
-                null, // gridY (날씨 API에서만 사용)
+        MetalCacheKey key = new MetalCacheKey(
                 stationcode,
                 itemcode
         );
@@ -57,11 +56,21 @@ public class MetalMeasuringService {
                 .map(metalDataMapper::map);
     }
 
-    private Mono<List<ItemDto>> getOrFetch(CacheKey key) {
-        return Mono.fromFuture(() -> cache.get(key));
+    private Mono<List<ItemDto>> getOrFetch(MetalCacheKey key) {
+        return Mono.defer(() -> {
+            CompletableFuture<List<ItemDto>> future = cache.get(key);
+
+            if (future.isDone()){
+                log.debug("Cache likely HIT for key={}", key);
+            }else {
+                log.debug("Cache MISS (loading) for key={}", key);
+            }
+
+            return Mono.fromFuture(future);
+        });
     }
 
-    private Mono<List<ItemDto>> fetchDataForKey(CacheKey key){
+    private Mono<List<ItemDto>> fetchDataForKey(MetalCacheKey key){
         String stationcode = key.getStationcode();
         String itemcode = key.getItemcode();
 
@@ -73,7 +82,7 @@ public class MetalMeasuringService {
     private Mono<List<ItemDto>> fetchDataFromApi(String url){
         return webClient.get()
                 .uri(url)
-                .header("Content-Type", "application/xml")
+                .accept(MediaType.APPLICATION_XML)
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(this::parseXml);
@@ -81,7 +90,6 @@ public class MetalMeasuringService {
 
     private List<ItemDto> parseXml(String xml){
         try{
-            XmlMapper xmlMapper = new XmlMapper();
             ResponseWrapper wrapper = xmlMapper.readValue(xml, ResponseWrapper.class);
 
             if (wrapper.getBody() != null && wrapper.getBody().getItems() != null
@@ -117,7 +125,12 @@ public class MetalMeasuringService {
 
         return Flux.fromIterable(allStationCodes)
                 .flatMap(stationCode -> Flux.fromIterable(allItemCodes)
-                        .flatMap(itemCode -> getMetalDataForLocation(stationCode, itemCode))
+                        .flatMap(itemCode -> getMetalDataForLocation(stationCode, itemCode)
+                                .onErrorResume(e -> {
+                                    log.error("API 호출 실패 (Station: {}, Item: {}): {}", stationCode, itemCode, e.getMessage());
+                                    return Mono.just(Collections.emptyList());
+                                })
+                        )
                 )
                 .flatMap(Flux::fromIterable)
                 .collectList();

@@ -3,7 +3,7 @@ package com.portfolio.clearSky.service;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.portfolio.clearSky.common.cache.CacheKey;
+import com.portfolio.clearSky.common.cache.WeatherCacheKey;
 import com.portfolio.clearSky.dto.BaseDateTimeDto;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.ResponseWrapper;
@@ -41,7 +41,7 @@ public class WeatherService {
     private String serviceKey;
 
     private final WebClient webClient;
-    private final AsyncLoadingCache<CacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
+    private final AsyncLoadingCache<WeatherCacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
             .expireAfterWrite(40, TimeUnit.HOURS)
             .maximumSize(1000)
             .buildAsync((key, executor) -> fetchDataForKey(key).toFuture());
@@ -52,7 +52,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY, null, null);
+        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY, null, null);
         return getOrFetch(key);
     }
 
@@ -63,20 +63,20 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        CacheKey key = new CacheKey(baseDate, baseTime, "FORECAST", gridX, gridY, null, null);
+        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "FORECAST", gridX, gridY, null, null);
         return getOrFetch(key);
     }
 
-    private Mono<List<ItemDto>> getOrFetch(CacheKey key) {
+    private Mono<List<ItemDto>> getOrFetch(WeatherCacheKey key) {
         return Mono.fromFuture(() -> cache.get(key));
     }
 
-    private Mono<List<ItemDto>> fetchDataForKey(CacheKey key) {
+    private Mono<List<ItemDto>> fetchDataForKey(WeatherCacheKey key) {
         String url = buildUrlForKey(key).toString();
         return fetchDataFromApi(url);
     }
 
-    private URI buildUrlForKey(CacheKey key) {
+    private URI buildUrlForKey(WeatherCacheKey key) {
         if (Objects.equals(key.getType(), "NOWCAST")) {
             return buildUrl(ultraShortNowcastApiUrl, key.getBaseDate(), key.getBaseTime(), key.getGridX(), key.getGridY());
         } else {

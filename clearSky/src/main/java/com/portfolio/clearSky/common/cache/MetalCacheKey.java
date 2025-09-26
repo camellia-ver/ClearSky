@@ -7,13 +7,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 @EqualsAndHashCode
-public class CacheKey {
-    private final String baseDate;
-    private final String baseTime;
-    private final String type;
-    private final Integer gridX;
-    private final Integer gridY;
-
+public class MetalCacheKey {
     private final String stationcode;
     private final String itemcode;
 }
