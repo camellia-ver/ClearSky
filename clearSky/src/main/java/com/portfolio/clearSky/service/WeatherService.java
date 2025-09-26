@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
 import java.net.URI;
@@ -40,9 +41,10 @@ public class WeatherService {
     @Value("${open.data.api.key}")
     private String serviceKey;
 
+    private final XmlMapper xmlMapper;
     private final WebClient webClient;
     private final AsyncLoadingCache<WeatherCacheKey, List<ItemDto>> cache = Caffeine.newBuilder()
-            .expireAfterWrite(40, TimeUnit.HOURS)
+            .expireAfterWrite(40, TimeUnit.MINUTES)
             .maximumSize(1000)
             .buildAsync((key, executor) -> fetchDataForKey(key).toFuture());
 
@@ -52,7 +54,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY, null, null);
+        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "NOWCAST", gridX, gridY);
         return getOrFetch(key);
     }
 
@@ -63,7 +65,7 @@ public class WeatherService {
         String baseDate = baseDateTime.getBaseDate();
         String baseTime = baseDateTime.getBaseTime();
 
-        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "FORECAST", gridX, gridY, null, null);
+        WeatherCacheKey key = new WeatherCacheKey(baseDate, baseTime, "FORECAST", gridX, gridY);
         return getOrFetch(key);
     }
 
@@ -87,7 +89,7 @@ public class WeatherService {
     private Mono<List<ItemDto>> fetchDataFromApi(String url) {
         return webClient.get()
                 .uri(url)
-                .header("Content-Type", "application/xml")
+                .accept(MediaType.APPLICATION_XML)
                 .retrieve()
                 .bodyToMono(String.class)
                 .map(this::parseXml);
@@ -95,7 +97,6 @@ public class WeatherService {
 
     private List<ItemDto> parseXml(String xml) {
         try {
-            XmlMapper xmlMapper = new XmlMapper();
             ResponseWrapper wrapper = xmlMapper.readValue(xml, ResponseWrapper.class);
 
             if (wrapper.getBody() != null && wrapper.getBody().getItems() != null
@@ -169,7 +170,7 @@ public class WeatherService {
         LocalDate baseDate = now.toLocalDate();
 
         // 4. 자정 처리: baseHour가 23이고 현재 시각이 00시 ~ 01시 40분 사이인 경우 (어제 발표 시각을 사용)
-        if (baseHour == 23 && currentHour < 2) {
+        if (baseHour == 23) {
             baseDate = baseDate.minusDays(1);
         }
 

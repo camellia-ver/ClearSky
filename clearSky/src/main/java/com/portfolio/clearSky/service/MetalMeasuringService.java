@@ -4,7 +4,6 @@ import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.github.benmanes.caffeine.cache.AsyncLoadingCache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import com.portfolio.clearSky.common.cache.MetalCacheKey;
-import com.portfolio.clearSky.common.cache.WeatherCacheKey;
 import com.portfolio.clearSky.dto.ItemDto;
 import com.portfolio.clearSky.dto.MetalDataResponse;
 import com.portfolio.clearSky.dto.ResponseWrapper;
