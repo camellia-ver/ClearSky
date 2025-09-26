@@ -233,9 +233,10 @@ document.addEventListener("DOMContentLoaded", () => {
         fetch(url)
             .then(response => {
                 if (!response.ok) throw new Error('네트워크 응답이 올바르지 않습니다.');
-                return response.json();
+                return response.text();
             })
-            .then(results => {
+            .then(xmlString => {
+                const results = parseXmlToLocations(xmlString);
                 displayAutocompleteResults(results);
             })
             .catch(error => {
@@ -243,6 +244,39 @@ document.addEventListener("DOMContentLoaded", () => {
                 autocompleteList.innerHTML = '';
                 autocompleteList.style.display = 'none';
             });
+    }
+
+    /**
+     * XML 문자열을 LocationDTO 객체 배열로 파싱하는 함수
+     * @param {string} xmlString - 서버에서 받은 XML 응답 문자열
+     * @returns {Array<Object>} - { full_address, lat, lng } 형태의 객체 배열
+     */
+    function parseXmlToLocations(xmlString) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, "text/xml");
+        const locationNodes = xmlDoc.getElementsByTagName('item');
+        const locations = [];
+
+        // 각 <location> 노드를 순회하며 데이터를 추출합니다.
+        for (let i = 0; i < locationNodes.length; i++) {
+            const node = locationNodes[i];
+
+            // 태그 이름으로 내부 데이터를 추출합니다.
+            const fullAddressNode = node.getElementsByTagName('full_address')[0];
+            const latNode = node.getElementsByTagName('lat')[0];
+            const lngNode = node.getElementsByTagName('lng')[0];
+
+            // 노드가 존재하고 텍스트 내용이 있을 때만 데이터를 추가합니다.
+            if (fullAddressNode && latNode && lngNode) {
+                locations.push({
+                    full_address: fullAddressNode.textContent,
+                    lat: parseFloat(latNode.textContent), // 숫자형으로 변환
+                    lng: parseFloat(lngNode.textContent)  // 숫자형으로 변환
+                });
+            }
+        }
+
+        return locations;
     }
 
     // 🔹 자동완성 목록 표시

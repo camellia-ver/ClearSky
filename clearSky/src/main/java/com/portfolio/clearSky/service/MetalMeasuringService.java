@@ -58,13 +58,6 @@ public class MetalMeasuringService {
     private Mono<List<ItemDto>> getOrFetch(MetalCacheKey key) {
         return Mono.defer(() -> {
             CompletableFuture<List<ItemDto>> future = cache.get(key);
-
-            if (future.isDone()){
-                log.debug("Cache likely HIT for key={}", key);
-            }else {
-                log.debug("Cache MISS (loading) for key={}", key);
-            }
-
             return Mono.fromFuture(future);
         });
     }
